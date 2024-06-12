@@ -81,6 +81,10 @@ enum ItemClass : uint8;
 enum LootError : uint8;
 enum LootType : uint8;
 
+// NpcBot mod
+class BotMgr;
+// end NpcBot mod
+
 typedef std::deque<Mail*> PlayerMails;
 
 #define PLAYER_MAX_SKILLS           127
