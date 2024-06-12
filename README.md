@@ -1,4 +1,4 @@
-# ![logo](AzerothUniverse.png) AzerothUniverseCore 3.3.5.12340
+# ![logo](AzerothUniverse.png) AzerothUniverseCore 3.3.5.12340 based on TrinityCore (3.3.5)
 
 * [Requirements](#requirements)
 * [AzerothUniverse](#azerothuniverse)
