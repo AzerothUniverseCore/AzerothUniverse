@@ -1437,14 +1437,7 @@ void ScriptMgr::OnCreateMap(Map* map)
 
 #ifdef ELUNA
     if (Eluna* e = map->GetEluna())
-    {
         e->OnCreate(map);
-        if (map->IsBattleground())
-        {
-            Battleground* bg = map->ToBattlegroundMap()->GetBG();
-            e->OnBGCreate(bg, bg->GetTypeID(), bg->GetInstanceID());
-        }
-    }
 #endif
 
     SCR_MAP_BGN(WorldMapScript, map, itr, end, entry, IsWorldMap);
@@ -1717,6 +1710,7 @@ CreatureAI* ScriptMgr::GetCreatureAI(Creature* creature)
 GameObjectAI* ScriptMgr::GetGameObjectAI(GameObject* gameobject)
 {
     ASSERT(gameobject);
+
     GET_SCRIPT_RET(GameObjectScript, gameobject->GetScriptId(), tmpscript, nullptr);
     return tmpscript->GetAI(gameobject);
 }

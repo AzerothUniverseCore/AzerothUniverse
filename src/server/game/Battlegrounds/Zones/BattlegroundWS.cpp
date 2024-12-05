@@ -431,14 +431,14 @@ void BattlegroundWS::EventBotCapturedFlag(Creature* bot)
         if (!IsHordeFlagPickedup())
             return;
         SetHordeFlagPicker(ObjectGuid::Empty);              // must be before aura remove to prevent 2 events (drop+capture) at the same time
-        // horde flag in base (but not respawned yet)
+                                                            // horde flag in base (but not respawned yet)
         _flagState[TEAM_HORDE] = BG_WS_FLAG_STATE_WAIT_RESPAWN;
-        // Drop Horde Flag from Player
+                                                            // Drop Horde Flag from Player
         bot->RemoveAurasDueToSpell(BG_WS_SPELL_WARSONG_FLAG);
         if (_flagDebuffState == 1)
-            bot->RemoveAurasDueToSpell(WS_SPELL_FOCUSED_ASSAULT);
+          bot->RemoveAurasDueToSpell(WS_SPELL_FOCUSED_ASSAULT);
         else if (_flagDebuffState == 2)
-            bot->RemoveAurasDueToSpell(WS_SPELL_BRUTAL_ASSAULT);
+          bot->RemoveAurasDueToSpell(WS_SPELL_BRUTAL_ASSAULT);
 
         if (GetTeamScore(TEAM_ALLIANCE) < BG_WS_MAX_TEAM_SCORE)
             AddPoint(ALLIANCE, 1);
@@ -450,14 +450,14 @@ void BattlegroundWS::EventBotCapturedFlag(Creature* bot)
         if (!IsAllianceFlagPickedup())
             return;
         SetAllianceFlagPicker(ObjectGuid::Empty);           // must be before aura remove to prevent 2 events (drop+capture) at the same time
-        // alliance flag in base (but not respawned yet)
+                                                            // alliance flag in base (but not respawned yet)
         _flagState[TEAM_ALLIANCE] = BG_WS_FLAG_STATE_WAIT_RESPAWN;
-        // Drop Alliance Flag from Player
+                                                            // Drop Alliance Flag from Player
         bot->RemoveAurasDueToSpell(BG_WS_SPELL_SILVERWING_FLAG);
         if (_flagDebuffState == 1)
-            bot->RemoveAurasDueToSpell(WS_SPELL_FOCUSED_ASSAULT);
+          bot->RemoveAurasDueToSpell(WS_SPELL_FOCUSED_ASSAULT);
         else if (_flagDebuffState == 2)
-            bot->RemoveAurasDueToSpell(WS_SPELL_BRUTAL_ASSAULT);
+          bot->RemoveAurasDueToSpell(WS_SPELL_BRUTAL_ASSAULT);
 
         if (GetTeamScore(TEAM_HORDE) < BG_WS_MAX_TEAM_SCORE)
             AddPoint(HORDE, 1);
@@ -638,9 +638,9 @@ void BattlegroundWS::EventBotDroppedFlag(Creature* bot)
             SetHordeFlagPicker(ObjectGuid::Empty);
             bot->RemoveAurasDueToSpell(BG_WS_SPELL_WARSONG_FLAG);
             if (_flagDebuffState == 1)
-                bot->RemoveAurasDueToSpell(WS_SPELL_FOCUSED_ASSAULT);
+              bot->RemoveAurasDueToSpell(WS_SPELL_FOCUSED_ASSAULT);
             else if (_flagDebuffState == 2)
-                bot->RemoveAurasDueToSpell(WS_SPELL_BRUTAL_ASSAULT);
+              bot->RemoveAurasDueToSpell(WS_SPELL_BRUTAL_ASSAULT);
             _flagState[TEAM_HORDE] = BG_WS_FLAG_STATE_ON_GROUND;
             bot->CastSpell(bot, BG_WS_SPELL_WARSONG_FLAG_DROPPED, true);
             set = true;
@@ -655,9 +655,9 @@ void BattlegroundWS::EventBotDroppedFlag(Creature* bot)
             SetAllianceFlagPicker(ObjectGuid::Empty);
             bot->RemoveAurasDueToSpell(BG_WS_SPELL_SILVERWING_FLAG);
             if (_flagDebuffState == 1)
-                bot->RemoveAurasDueToSpell(WS_SPELL_FOCUSED_ASSAULT);
+              bot->RemoveAurasDueToSpell(WS_SPELL_FOCUSED_ASSAULT);
             else if (_flagDebuffState == 2)
-                bot->RemoveAurasDueToSpell(WS_SPELL_BRUTAL_ASSAULT);
+              bot->RemoveAurasDueToSpell(WS_SPELL_BRUTAL_ASSAULT);
             _flagState[TEAM_ALLIANCE] = BG_WS_FLAG_STATE_ON_GROUND;
             bot->CastSpell(bot, BG_WS_SPELL_SILVERWING_FLAG_DROPPED, true);
             set = true;
@@ -827,12 +827,12 @@ void BattlegroundWS::EventBotClickedOnFlag(Creature* bot, GameObject* target_obj
         UpdateWorldState(BG_WS_FLAG_UNK_ALLIANCE, 1);
         bot->CastSpell(bot, BG_WS_SPELL_SILVERWING_FLAG, true);
         if (_flagState[1] == BG_WS_FLAG_STATE_ON_PLAYER)
-            _bothFlagsKept = true;
+          _bothFlagsKept = true;
 
         if (_flagDebuffState == 1)
-            bot->CastSpell(bot, WS_SPELL_FOCUSED_ASSAULT, true);
+          bot->CastSpell(bot, WS_SPELL_FOCUSED_ASSAULT, true);
         else if (_flagDebuffState == 2)
-            bot->CastSpell(bot, WS_SPELL_BRUTAL_ASSAULT, true);
+          bot->CastSpell(bot, WS_SPELL_BRUTAL_ASSAULT, true);
     }
 
     //horde flag picked up from base
@@ -849,12 +849,12 @@ void BattlegroundWS::EventBotClickedOnFlag(Creature* bot, GameObject* target_obj
         UpdateWorldState(BG_WS_FLAG_UNK_HORDE, 1);
         bot->CastSpell(bot, BG_WS_SPELL_WARSONG_FLAG, true);
         if (_flagState[0] == BG_WS_FLAG_STATE_ON_PLAYER)
-            _bothFlagsKept = true;
+          _bothFlagsKept = true;
 
         if (_flagDebuffState == 1)
-            bot->CastSpell(bot, WS_SPELL_FOCUSED_ASSAULT, true);
+          bot->CastSpell(bot, WS_SPELL_FOCUSED_ASSAULT, true);
         else if (_flagDebuffState == 2)
-            bot->CastSpell(bot, WS_SPELL_BRUTAL_ASSAULT, true);
+          bot->CastSpell(bot, WS_SPELL_BRUTAL_ASSAULT, true);
     }
 
     //Alliance flag on ground(not in base) (returned or picked up again from ground!)
@@ -882,9 +882,9 @@ void BattlegroundWS::EventBotClickedOnFlag(Creature* bot, GameObject* target_obj
             _flagState[TEAM_ALLIANCE] = BG_WS_FLAG_STATE_ON_PLAYER;
             UpdateFlagState(HORDE, BG_WS_FLAG_STATE_ON_PLAYER);
             if (_flagDebuffState == 1)
-                bot->CastSpell(bot, WS_SPELL_FOCUSED_ASSAULT, true);
+              bot->CastSpell(bot, WS_SPELL_FOCUSED_ASSAULT, true);
             else if (_flagDebuffState == 2)
-                bot->CastSpell(bot, WS_SPELL_BRUTAL_ASSAULT, true);
+              bot->CastSpell(bot, WS_SPELL_BRUTAL_ASSAULT, true);
             UpdateWorldState(BG_WS_FLAG_UNK_ALLIANCE, 1);
         }
         //called in HandleGameObjectUseOpcode:
@@ -916,9 +916,9 @@ void BattlegroundWS::EventBotClickedOnFlag(Creature* bot, GameObject* target_obj
             _flagState[TEAM_HORDE] = BG_WS_FLAG_STATE_ON_PLAYER;
             UpdateFlagState(ALLIANCE, BG_WS_FLAG_STATE_ON_PLAYER);
             if (_flagDebuffState == 1)
-                bot->CastSpell(bot, WS_SPELL_FOCUSED_ASSAULT, true);
+              bot->CastSpell(bot, WS_SPELL_FOCUSED_ASSAULT, true);
             else if (_flagDebuffState == 2)
-                bot->CastSpell(bot, WS_SPELL_BRUTAL_ASSAULT, true);
+              bot->CastSpell(bot, WS_SPELL_BRUTAL_ASSAULT, true);
             UpdateWorldState(BG_WS_FLAG_UNK_HORDE, 1);
         }
         //called in HandleGameObjectUseOpcode:
@@ -1060,30 +1060,30 @@ void BattlegroundWS::HandleBotAreaTrigger(Creature* bot, uint32 trigger)
 
     switch (trigger)
     {
-    case 3686:                                          // Alliance elixir of speed spawn. Trigger not working, because located inside other areatrigger, can be replaced by IsWithinDist(object, dist) in Battleground::Update().
-    case 3687:                                          // Horde elixir of speed spawn. Trigger not working, because located inside other areatrigger, can be replaced by IsWithinDist(object, dist) in Battleground::Update().
-    case 3706:                                          // Alliance elixir of regeneration spawn
-    case 3708:                                          // Horde elixir of regeneration spawn
-    case 3707:                                          // Alliance elixir of berserk spawn
-    case 3709:                                          // Horde elixir of berserk spawn
-    case 3649:                                          // unk1
-    case 3688:                                          // unk2
-    case 4628:                                          // unk3
-    case 4629:                                          // unk4
-        break;
-    case 3646:                                          // Alliance Flag spawn
-        if (_flagState[TEAM_HORDE] && !_flagState[TEAM_ALLIANCE])
-            if (GetFlagPickerGUID(TEAM_HORDE) == bot->GetGUID())
-                EventBotCapturedFlag(bot);
-        break;
-    case 3647:                                          // Horde Flag spawn
-        if (_flagState[TEAM_ALLIANCE] && !_flagState[TEAM_HORDE])
-            if (GetFlagPickerGUID(TEAM_ALLIANCE) == bot->GetGUID())
-                EventBotCapturedFlag(bot);
-        break;
-    default:
-        Battleground::HandleBotAreaTrigger(bot, trigger);
-        break;
+        case 3686:                                          // Alliance elixir of speed spawn. Trigger not working, because located inside other areatrigger, can be replaced by IsWithinDist(object, dist) in Battleground::Update().
+        case 3687:                                          // Horde elixir of speed spawn. Trigger not working, because located inside other areatrigger, can be replaced by IsWithinDist(object, dist) in Battleground::Update().
+        case 3706:                                          // Alliance elixir of regeneration spawn
+        case 3708:                                          // Horde elixir of regeneration spawn
+        case 3707:                                          // Alliance elixir of berserk spawn
+        case 3709:                                          // Horde elixir of berserk spawn
+        case 3649:                                          // unk1
+        case 3688:                                          // unk2
+        case 4628:                                          // unk3
+        case 4629:                                          // unk4
+            break;
+        case 3646:                                          // Alliance Flag spawn
+            if (_flagState[TEAM_HORDE] && !_flagState[TEAM_ALLIANCE])
+                if (GetFlagPickerGUID(TEAM_HORDE) == bot->GetGUID())
+                    EventBotCapturedFlag(bot);
+            break;
+        case 3647:                                          // Horde Flag spawn
+            if (_flagState[TEAM_ALLIANCE] && !_flagState[TEAM_HORDE])
+                if (GetFlagPickerGUID(TEAM_ALLIANCE) == bot->GetGUID())
+                    EventBotCapturedFlag(bot);
+            break;
+        default:
+            Battleground::HandleBotAreaTrigger(bot, trigger);
+            break;
     }
 }
 //end npcbot

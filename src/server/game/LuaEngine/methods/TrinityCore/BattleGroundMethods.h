@@ -82,11 +82,7 @@ namespace LuaBattleGround
      */
     int GetEndTime(Eluna* E, BattleGround* bg)
     {
-#ifdef CATA
-        E->Push(bg->GetRemainingTime());
-#else
         E->Push(bg->GetEndTime());
-#endif
         return 1;
     }
 
@@ -245,9 +241,7 @@ namespace LuaBattleGround
         { "GetMaxPlayersPerTeam", &LuaBattleGround::GetMaxPlayersPerTeam },
         { "GetMinPlayersPerTeam", &LuaBattleGround::GetMinPlayersPerTeam },
         { "GetWinner", &LuaBattleGround::GetWinner },
-        { "GetStatus", &LuaBattleGround::GetStatus },
-
-        { NULL, NULL, METHOD_REG_NONE }
+        { "GetStatus", &LuaBattleGround::GetStatus }
     };
 };
 #endif

@@ -219,6 +219,13 @@ public:
         {
             _botclass = BOT_CLASS_ROGUE;
 
+            mhEnchantExpireTimer = 1;
+            ohEnchantExpireTimer = 1;
+            mhEnchant = 0;
+            ohEnchant = 0;
+            needChooseMHEnchant = true;
+            needChooseOHEnchant = true;
+
             InitUnitFlags();
         }
 
@@ -499,7 +506,7 @@ public:
             if (mytar->IsControlledByPlayer() || me->GetHealthPct() < 25.f)
             {
                 //Vanish (no GCD)
-                if (IsSpellReady(VANISH_1, diff, false) && !stealthed && !shadowdance && !IsTank() && Rand() < 45 && !me->HasAuraType(SPELL_AURA_PERIODIC_DAMAGE))
+                if (IsSpellReady(VANISH_1, diff, false) && !stealthed && !shadowdance && !IsTank() && Rand() < 45 && !me->HasAuraType(SPELL_AURA_PERIODIC_DAMAGE) && !IsFlagCarrier(me))
                 {
                     bool cast = false;
                     //case 1: restealth for opener
@@ -524,7 +531,7 @@ public:
             if (dist > 5)
             {
                 //if (mytar->IsPolymorphed())
-                //    TC_LOG_ERROR("entities.player", "rogue_bot: cannot attack target (dist)...");
+                //    BOT_LOG_ERROR("entities.player", "rogue_bot: cannot attack target (dist)...");
                 return;
             }
 
@@ -583,7 +590,7 @@ public:
 
             if (!hasnormalstun && duration > 300 && uint32(energy) < me->GetMaxPower(POWER_ENERGY))
             {
-                //TC_LOG_ERROR("entities.player", "bot_rogue: delaying attacks on gouged or blinded target...");
+                //BOT_LOG_ERROR("entities.player", "bot_rogue: delaying attacks on gouged or blinded target...");
                 return;
             }
 
@@ -731,7 +738,7 @@ public:
         {
             if (me->IsInCombat() && Rand() < 25)
             {
-                bool canVanish = IsSpellReady(VANISH_1, diff, false);
+                bool canVanish = IsSpellReady(VANISH_1, diff, false) && !IsFlagCarrier(me);
                 bool canSprint = (GetSpec() == BOT_SPEC_ROGUE_COMBAT) && me->GetLevel() >= 25 && !HasBotCommandState(BOT_COMMAND_STAY) && IsSpellReady(SPRINT_1, diff, false);
                 if ((canVanish || canSprint) && me->HasAuraWithMechanic((1<<MECHANIC_SNARE)|(1<<MECHANIC_ROOT)))
                 {
@@ -749,21 +756,9 @@ public:
                 return;
 
             if (mhEnchantExpireTimer > 0 && mhEnchantExpireTimer <= diff)
-            {
-                uint8 slot = TEMP_ENCHANTMENT_SLOT;
-                if (Item* mh = GetEquips(BOT_SLOT_MAINHAND))
-                    if (mh->GetEnchantmentId(EnchantmentSlot(slot)))
-                        for (uint8 i = 0; i != MAX_ITEM_ENCHANTMENT_EFFECTS; ++i)
-                            mh->SetUInt32Value(ITEM_FIELD_ENCHANTMENT_1_1 + slot*MAX_ENCHANTMENT_OFFSET + i, 0);
-            }
+                RemoveItemClassEnchantment(BOT_SLOT_MAINHAND);
             if (ohEnchantExpireTimer > 0 && ohEnchantExpireTimer <= diff)
-            {
-                uint8 slot = TEMP_ENCHANTMENT_SLOT;
-                if (Item* oh = GetEquips(BOT_SLOT_OFFHAND))
-                    if (oh->GetEnchantmentId(EnchantmentSlot(slot)))
-                        for (uint8 i = 0; i != MAX_ITEM_ENCHANTMENT_EFFECTS; ++i)
-                            oh->SetUInt32Value(ITEM_FIELD_ENCHANTMENT_1_1 + slot*MAX_ENCHANTMENT_OFFSET + i, 0);
-            }
+                RemoveItemClassEnchantment(BOT_SLOT_OFFHAND);
 
             // Weapon Enchants
             if (me->isMoving())
@@ -1020,7 +1015,7 @@ public:
 
             //Cold Blood
             if (AuraEffect const* bloo = me->GetAuraEffect(COLD_BLOOD_1, 0, me->GetGUID()))
-                if (bloo->IsAffectedOnSpell(spellInfo))
+                if (bloo->IsAffectingSpell(spellInfo))
                     crit_chance += 100.f;
 
             //Puncturing Wounds:
@@ -1047,7 +1042,7 @@ public:
                 crit_chance += 6.f;
             //Remorseless Attacks:
             if (AuraEffect const* remo = me->GetAuraEffect(REMORSELESS_ATTACKS_BUFF, 0, me->GetGUID()))
-                if (remo->IsAffectedOnSpell(spellInfo))
+                if (remo->IsAffectingSpell(spellInfo))
                     crit_chance += 40.f;
         }
 
@@ -1347,7 +1342,7 @@ public:
 
             //Remorseless Attacks: proc consume buff
             if (AuraEffect const* remo = me->GetAuraEffect(REMORSELESS_ATTACKS_BUFF, 0, me->GetGUID()))
-                if (remo->IsAffectedOnSpell(spellInfo))
+                if (remo->IsAffectingSpell(spellInfo))
                     me->RemoveAurasDueToSpell(REMORSELESS_ATTACKS_BUFF);
 
             //Relentless Strikes
@@ -1358,7 +1353,7 @@ public:
                     if (irand(1,100) <= 20 * comboPoints)
                     {
                         me->CastSpell(me, RELENTLESS_STRIKES_EFFECT, true);
-                        //TC_LOG_ERROR("entities.player", "rogue_bot CP SPEND1: RS proc!");
+                        //BOT_LOG_ERROR("entities.player", "rogue_bot CP SPEND1: RS proc!");
                     }
                 }
             }
@@ -1400,7 +1395,7 @@ public:
                 item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT_1_1 + slot*MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_ID_OFFSET, enchant_id);
                 item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT_1_1 + slot*MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_DURATION_OFFSET, duration);
                 item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT_1_1 + slot*MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_CHARGES_OFFSET, charges);
-                ApplyItemBonuses(itemSlot); //RemoveItemBonuses inside
+                ApplyItemEnchantment(item, TEMP_ENCHANTMENT_SLOT, itemSlot);
                 if (itemSlot == BOT_SLOT_MAINHAND)
                     mhEnchantExpireTimer = ITEM_ENCHANTMENT_EXPIRE_TIMER;
                 else if (itemSlot == BOT_SLOT_OFFHAND)
@@ -1458,7 +1453,7 @@ public:
 
             //Cold Blood: handle proc
             if (AuraEffect const* bloo = me->GetAuraEffect(COLD_BLOOD_1, 0, me->GetGUID()))
-                if (bloo->IsAffectedOnSpell(spell))
+                if (bloo->IsAffectingSpell(spell))
                     me->RemoveAurasDueToSpell(COLD_BLOOD_1);
 
             //Combo point generating from effects
@@ -1466,11 +1461,11 @@ public:
                 baseId == SETUP_EFFECT || baseId == INITIATIVE_EFFECT || baseId == HONOR_AMONG_THIEVES_EFFECT)
             {
                 ++comboPoints;
-                //TC_LOG_ERROR("entities.player", "rogue_bot CP GEN2: {} adds 1, now {}", spell->SpellName[0], uint32(comboPoints));
+                //BOT_LOG_ERROR("entities.player", "rogue_bot CP GEN2: {} adds 1, now {}", spell->SpellName[0], uint32(comboPoints));
                 if (comboPoints > 5)
                 {
                     comboPoints = 5;
-                    //TC_LOG_ERROR("entities.player", "rogue_bot CP NOR2: now {}", uint32(comboPoints));
+                    //BOT_LOG_ERROR("entities.player", "rogue_bot CP NOR2: now {}", uint32(comboPoints));
                 }
             }
             //Combo point generating from spells
@@ -1482,7 +1477,7 @@ public:
                 (baseId == MUTILATE_1 || baseId == PREMEDITATION_1 || baseId == CHEAP_SHOT_1) ?
                     comboPoints += 2 : ++comboPoints;
 
-                //TC_LOG_ERROR("entities.player", "rogue_bot CP GEN1: {} adds {}, now {}",
+                //BOT_LOG_ERROR("entities.player", "rogue_bot CP GEN1: {} adds {}, now {}",
                 //    spell->SpellName[0], (baseId == MUTILATE_1 || baseId == PREMEDITATION_1 || baseId == CHEAP_SHOT_1) ?
                 //    2 : 1, uint32(comboPoints));
 
@@ -1490,13 +1485,13 @@ public:
                 if (baseId == SINISTER_STRIKE_1 && glyphSSProc)
                 {
                     ++comboPoints;
-                    //TC_LOG_ERROR("entities.player", "rogue_bot CP GEN1: glyphSS proc, now {}", uint32(comboPoints));
+                    //BOT_LOG_ERROR("entities.player", "rogue_bot CP GEN1: glyphSS proc, now {}", uint32(comboPoints));
                 }
 
                 if (comboPoints > 5)
                 {
                     comboPoints = 5;
-                    //TC_LOG_ERROR("entities.player", "rogue_bot CP NOR1: now {}", uint32(comboPoints));
+                    //BOT_LOG_ERROR("entities.player", "rogue_bot CP NOR1: now {}", uint32(comboPoints));
                 }
             }
             //if (spellId == EVISCERATE || spellId == KIDNEY_SHOT || spellId == SLICE_DICE || spellId == RUPTURE || spellId == EXPOSE_ARMOR || spellId == ENVENOM)
@@ -1507,7 +1502,7 @@ public:
                 //comboPoints = 0;
                 combopointsSpent = true; //envenom problem - cps spent before aura application
 
-                //TC_LOG_ERROR("entities.player", "rogue_bot CP SPEND1: {} to 0", tempCP);
+                //BOT_LOG_ERROR("entities.player", "rogue_bot CP SPEND1: {} to 0", tempCP);
 
                 //Relentless Strikes: moved to OnClassSpellGo (triggered even without hitting the target)
 
@@ -1517,7 +1512,7 @@ public:
                     if (urand(1,100) <= 60)
                     {
                         me->CastSpell(target, RUTHLESSNESS_EFFECT, true);
-                        //TC_LOG_ERROR("entities.player", "rogue_bot CP SPEND1: RU proc!");
+                        //BOT_LOG_ERROR("entities.player", "rogue_bot CP SPEND1: RU proc!");
                     }
                 }
             }
@@ -1525,7 +1520,7 @@ public:
             //Preparation: handle effect
             if (baseId == PREPARATION_1)
             {
-                //TC_LOG_ERROR("entities.player", "rogue_bot Preparation hit!");
+                //BOT_LOG_ERROR("entities.player", "rogue_bot Preparation hit!");
                 if (GetSpell(EVASION_1))
                     SetSpellCooldown(EVASION_1, 0);
                 if (GetSpell(SPRINT_1))
@@ -1747,9 +1742,9 @@ public:
                     return needChooseMHEnchant;
                 case BOTAI_MISC_ENCHANT_IS_AUTO_OH:
                     return needChooseOHEnchant;
-                case BOTAI_MISC_ENCHANT_CAN_EXPIRE_MH:
+                case BOTAI_MISC_ENCHANT_TIMER_MH:
                     return mhEnchantExpireTimer;
-                case BOTAI_MISC_ENCHANT_CAN_EXPIRE_OH:
+                case BOTAI_MISC_ENCHANT_TIMER_OH:
                     return ohEnchantExpireTimer;
                 case BOTAI_MISC_ENCHANT_CURRENT_MH:
                     return mhEnchant;
@@ -1782,25 +1777,33 @@ public:
                 case BOTAI_MISC_DAGGER_OFFHAND:
                     isdaggerOH = bool(value);
                     break;
-                case BOTAI_MISC_ENCHANT_CAN_EXPIRE_MH:
-                    if (value)
-                        mhEnchantExpireTimer = 0;
+                case BOTAI_MISC_ENCHANT_IS_AUTO_MH:
+                    needChooseMHEnchant = bool(value);
                     break;
-                case BOTAI_MISC_ENCHANT_CAN_EXPIRE_OH:
-                    if (value)
-                        ohEnchantExpireTimer = 0;
+                case BOTAI_MISC_ENCHANT_IS_AUTO_OH:
+                    needChooseOHEnchant = bool(value);
+                    break;
+                case BOTAI_MISC_ENCHANT_TIMER_MH:
+                    if (value == 0)
+                        mhEnchantExpireTimer = value;
+                    break;
+                case BOTAI_MISC_ENCHANT_TIMER_OH:
+                    if (value == 0)
+                        ohEnchantExpireTimer = value;
                     break;
                 case BOTAI_MISC_ENCHANT_CURRENT_MH:
                     mhEnchant = value;
-                    needChooseMHEnchant = value ? false : true;
+                    SetAIMiscValue(BOTAI_MISC_ENCHANT_IS_AUTO_MH, value ? false : true);
                     break;
                 case BOTAI_MISC_ENCHANT_CURRENT_OH:
                     ohEnchant = value;
-                    needChooseOHEnchant = value ? false : true;
+                    SetAIMiscValue(BOTAI_MISC_ENCHANT_IS_AUTO_OH, value ? false : true);
                     break;
                 default:
                     break;
             }
+
+            bot_ai::SetAIMiscValue(data, value);
         }
 
         void Reset() override
@@ -1810,15 +1813,10 @@ public:
             combopointsSpent = false;
             glyphSSProc = false;
 
-            mhEnchantExpireTimer = 1;
-            ohEnchantExpireTimer = 1;
+            mhEnchantExpireTimer = std::min<uint32>(mhEnchantExpireTimer, 1);
+            ohEnchantExpireTimer = std::min<uint32>(ohEnchantExpireTimer, 1);
 
             DefaultInit();
-
-            mhEnchant = 0;
-            ohEnchant = 0;
-            needChooseMHEnchant = true;
-            needChooseOHEnchant = true;
 
             //after InitEquips
             Item const* mh = GetEquips(BOT_SLOT_MAINHAND);

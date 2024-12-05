@@ -201,8 +201,8 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
                 if (!bot)
                     continue;
                 PlayerQueueInfo& pl_info = m_QueuedPlayers[bot->GetGUID()];
-                pl_info.LastOnlineTime = lastOnlineTime;
-                pl_info.GroupInfo = ginfo;
+                pl_info.LastOnlineTime   = lastOnlineTime;
+                pl_info.GroupInfo        = ginfo;
                 ginfo->Players[bot->GetGUID()] = &pl_info;
             }
         }
@@ -256,7 +256,7 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, Battlegr
     }
 
     //npcbot: try to queue wandering bots
-    if (!isRated && !ArenaType && !arenateamid && !sBattlegroundMgr->isTesting())
+    if (!isRated && !isPremade && !ArenaType && !arenateamid && !sBattlegroundMgr->isTesting())
     {
         if (!BotDataMgr::GenerateBattlegroundBots(leader, grp, this, bracketEntry, ginfo))
         {
@@ -277,19 +277,19 @@ GroupQueueInfo* BattlegroundQueue::AddBotAsGroup(ObjectGuid guid, uint32 team, B
     BattlegroundBracketId bracketId = bracketEntry->GetBracketId();
 
     // create new ginfo
-    GroupQueueInfo* ginfo = new GroupQueueInfo;
-    ginfo->BgTypeId = BgTypeId;
-    ginfo->ArenaType = ArenaType;
-    ginfo->ArenaTeamId = arenateamid;
-    ginfo->IsRated = isRated;
+    GroupQueueInfo* ginfo            = new GroupQueueInfo;
+    ginfo->BgTypeId                  = BgTypeId;
+    ginfo->ArenaType                 = ArenaType;
+    ginfo->ArenaTeamId               = arenateamid;
+    ginfo->IsRated                   = isRated;
     ginfo->IsInvitedToBGInstanceGUID = 0;
-    ginfo->JoinTime = GameTime::GetGameTimeMS();
-    ginfo->RemoveInviteTime = 0;
-    ginfo->Team = team;
-    ginfo->ArenaTeamRating = ArenaRating;
-    ginfo->ArenaMatchmakerRating = MatchmakerRating;
-    ginfo->PreviousOpponentsTeamId = PreviousOpponentsArenaTeamId;
-    ginfo->OpponentsTeamRating = 0;
+    ginfo->JoinTime                  = GameTime::GetGameTimeMS();
+    ginfo->RemoveInviteTime          = 0;
+    ginfo->Team                      = team;
+    ginfo->ArenaTeamRating           = ArenaRating;
+    ginfo->ArenaMatchmakerRating     = MatchmakerRating;
+    ginfo->PreviousOpponentsTeamId   = PreviousOpponentsArenaTeamId;
+    ginfo->OpponentsTeamRating       = 0;
     ginfo->OpponentsMatchmakerRating = 0;
 
     ginfo->Players.clear();
@@ -314,9 +314,9 @@ GroupQueueInfo* BattlegroundQueue::AddBotAsGroup(ObjectGuid guid, uint32 team, B
     }
 
     PlayerQueueInfo& pl_info = m_QueuedPlayers[guid];
-    pl_info.LastOnlineTime = lastOnlineTime;
-    pl_info.GroupInfo = ginfo;
-    ginfo->Players[guid] = &pl_info;
+    pl_info.LastOnlineTime   = lastOnlineTime;
+    pl_info.GroupInfo        = ginfo;
+    ginfo->Players[guid]     = &pl_info;
 
     m_QueuedGroups[bracketId][index].push_back(ginfo);
 

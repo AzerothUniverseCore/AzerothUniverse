@@ -256,18 +256,14 @@ namespace LuaGroup
         return 1;
     }
 
-#ifndef CATA
     /**
      * Returns the [Group] members' flags
      *
-     * <pre>
-     * enum GroupMemberFlags
-     * {
-     *     MEMBER_FLAG_ASSISTANT   = 1,
-     *     MEMBER_FLAG_MAINTANK    = 2,
-     *     MEMBER_FLAG_MAINASSIST  = 4
-     * };
-     * </pre>
+     * @table
+     * @columns [GroupMemberFlags, ID]
+     * @values [MEMBER_FLAG_ASSISTANT, 1]
+     * @values [MEMBER_FLAG_MAINTANK, 2]
+     * @values [MEMBER_FLAG_MAINASSIST, 4]
      *
      * @param ObjectGuid guid : guid of the player
      * @return uint8 flags
@@ -278,7 +274,6 @@ namespace LuaGroup
         E->Push(group->GetMemberFlags(guid));
         return 1;
     }
-#endif
 
     /**
      * Sets the leader of this [Group]
@@ -317,15 +312,12 @@ namespace LuaGroup
      *
      * In multistate, this method is only available in the WORLD state
      *
-     * <pre>
-     * enum RemoveMethod
-     * {
-     *     GROUP_REMOVEMETHOD_DEFAULT  = 0,
-     *     GROUP_REMOVEMETHOD_KICK     = 1,
-     *     GROUP_REMOVEMETHOD_LEAVE    = 2,
-     *     GROUP_REMOVEMETHOD_KICK_LFG = 3
-     * };
-     * </pre>
+     * @table
+     * @columns [RemoveMethod, ID]
+     * @values [GROUP_REMOVEMETHOD_DEFAULT, 0]
+     * @values [GROUP_REMOVEMETHOD_KICK, 1]
+     * @values [GROUP_REMOVEMETHOD_LEAVE, 2]
+     * @values [GROUP_REMOVEMETHOD_KICK_LFG, 3]
      *
      * @param ObjectGuid guid : guid of the player to remove
      * @param [RemoveMethod] method : method used to remove the player
@@ -416,7 +408,6 @@ namespace LuaGroup
      * Converts the [Group] to a LFG group
      *
      * In multistate, this method is only available in the WORLD state
-     *
      */
     int ConvertToLFG(Eluna* /*E*/, Group* group)
     {
@@ -424,20 +415,16 @@ namespace LuaGroup
         return 0;
     }
 
-#ifndef CATA
     /**
      * Sets or removes a flag for a [Group] member
      *
      * In multistate, this method is only available in the WORLD state
      *
-     * <pre>
-     * enum GroupMemberFlags
-     * {
-     *     MEMBER_FLAG_ASSISTANT   = 1,
-     *     MEMBER_FLAG_MAINTANK    = 2,
-     *     MEMBER_FLAG_MAINASSIST  = 4
-     * };
-     * </pre>
+     * @table
+     * @columns [GroupMemberFlags, ID]
+     * @values [MEMBER_FLAG_ASSISTANT, 1]
+     * @values [MEMBER_FLAG_MAINTANK, 2]
+     * @values [MEMBER_FLAG_MAINASSIST, 4]
      *
      * @param ObjectGuid target : GUID of the target
      * @param bool apply : add the `flag` if `true`, remove the `flag` otherwise
@@ -452,7 +439,6 @@ namespace LuaGroup
         group->SetGroupMemberFlag(target, apply, flag);
         return 0;
     }
-#endif
 
     ElunaRegister<Group> GroupMethods[] =
     {
@@ -463,17 +449,13 @@ namespace LuaGroup
         { "GetMemberGroup", &LuaGroup::GetMemberGroup },
         { "GetMemberGUID", &LuaGroup::GetMemberGUID },
         { "GetMembersCount", &LuaGroup::GetMembersCount },
-#ifndef CATA
         { "GetMemberFlags", &LuaGroup::GetMemberFlags },
-#endif
 
         // Setters
         { "SetLeader", &LuaGroup::SetLeader, METHOD_REG_WORLD }, // World state method only in multistate
         { "SetMembersGroup", &LuaGroup::SetMembersGroup, METHOD_REG_WORLD }, // World state method only in multistate
         { "SetTargetIcon", &LuaGroup::SetTargetIcon, METHOD_REG_WORLD }, // World state method only in multistate
-#ifndef CATA
         { "SetMemberFlag", &LuaGroup::SetMemberFlag, METHOD_REG_WORLD }, // World state method only in multistate
-#endif
 
         // Boolean
         { "IsLeader", &LuaGroup::IsLeader },
@@ -493,14 +475,7 @@ namespace LuaGroup
         // Other
         { "SendPacket", &LuaGroup::SendPacket },
         { "ConvertToLFG", &LuaGroup::ConvertToLFG, METHOD_REG_WORLD }, // World state method only in multistate
-        { "ConvertToRaid", &LuaGroup::ConvertToRaid, METHOD_REG_WORLD }, // World state method only in multistate
-
-#ifdef CATA //Not implemented in TCPP
-        { "GetMemberFlags", nullptr, METHOD_REG_NONE },
-        { "SetMemberFlag", nullptr, METHOD_REG_NONE },
-#endif
-
-        { NULL, NULL, METHOD_REG_NONE }
+        { "ConvertToRaid", &LuaGroup::ConvertToRaid, METHOD_REG_WORLD } // World state method only in multistate
     };
 };
 

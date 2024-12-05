@@ -202,7 +202,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
             if (object->IsNPCBot())
                 condMeets = true;
             else
-                //end npcbot
+            //end npcbot
             if (Player* player = object->ToPlayer())
                 condMeets = player->HasAchieved(ConditionValue1);
             break;
@@ -213,7 +213,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
             if (object->IsNPCBot() && object->ToCreature()->GetBotAI() && !object->ToCreature()->IsFreeBot())
                 condMeets = object->ToCreature()->GetBotOwner()->GetTeam() == ConditionValue1;
             else
-                //end npcbot
+            //end npcbot
             if (Player* player = object->ToPlayer())
                 condMeets = player->GetTeam() == ConditionValue1;
             break;
@@ -236,7 +236,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
             if (object->IsNPCBot())
                 condMeets = object->ToCreature()->GetGender() == Gender(ConditionValue1);
             else
-                //end npcbot
+            //end npcbot
             if (Player* player = object->ToPlayer())
                 condMeets = player->GetNativeGender() == Gender(ConditionValue1);
             break;
@@ -247,7 +247,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
             if (object->IsNPCBot())
                 condMeets = true;
             else
-                //end npcbot
+            //end npcbot
             if (Player* player = object->ToPlayer())
                 condMeets = player->HasSkill(ConditionValue1) && player->GetBaseSkillValue(ConditionValue1) >= ConditionValue2;
             break;
@@ -326,7 +326,7 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo) const
             if (object->GetTypeId() == TYPEID_UNIT && object->ToCreature()->GetBotAI())
                 condMeets = object->ToCreature()->GetBotAI()->HasSpell(sSpellMgr->GetSpellInfo(ConditionValue1)->GetFirstRankSpell()->Id);
             else
-                //end npcbot
+            //end npcbot
             if (Player* player = object->ToPlayer())
                 condMeets = player->HasSpell(ConditionValue1);
             break;

@@ -124,7 +124,6 @@ namespace LuaGuild
         return 1;
     }
 
-#ifndef CATA
     /**
      * Sets the leader of this [Guild]
      *
@@ -139,7 +138,6 @@ namespace LuaGuild
         guild->HandleSetLeader(player->GetSession(), player->GetName());
         return 0;
     }
-#endif
 
     /**
      * Sets the information of the bank tab specified
@@ -274,22 +272,14 @@ namespace LuaGuild
         // Setters
         { "SetBankTabText", &LuaGuild::SetBankTabText, METHOD_REG_WORLD }, // World state method only in multistate
         { "SetMemberRank", &LuaGuild::SetMemberRank, METHOD_REG_WORLD }, // World state method only in multistate
-#ifndef CATA
         { "SetLeader", &LuaGuild::SetLeader, METHOD_REG_WORLD }, // World state method only in multistate
-#endif
 
         // Other
         { "SendPacket", &LuaGuild::SendPacket },
         { "SendPacketToRanked", &LuaGuild::SendPacketToRanked },
         { "Disband", &LuaGuild::Disband, METHOD_REG_WORLD }, // World state method only in multistate
         { "AddMember", &LuaGuild::AddMember, METHOD_REG_WORLD }, // World state method only in multistate
-        { "DeleteMember", &LuaGuild::DeleteMember, METHOD_REG_WORLD }, // World state method only in multistate
-
-#ifdef CATA //Not implemented in TCPP
-        { "SetLeader", nullptr, METHOD_REG_NONE },
-#endif
-
-        { NULL, NULL, METHOD_REG_NONE }
+        { "DeleteMember", &LuaGuild::DeleteMember, METHOD_REG_WORLD } // World state method only in multistate
     };
 };
 #endif

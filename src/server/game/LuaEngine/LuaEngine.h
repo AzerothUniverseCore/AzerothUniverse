@@ -8,36 +8,31 @@
 #define _LUA_ENGINE_H
 
 #include "Common.h"
-#ifndef CMANGOS
-#include "SharedDefines.h"
-#include "DBCEnums.h"
+#include "ElunaUtility.h"
+#include "Hooks.h"
 
+#if !defined ELUNA_CMANGOS
+#include "DBCEnums.h"
 #include "Group.h"
 #include "Item.h"
-#else
-#include "Globals/SharedDefines.h"
-#include "Server/DBCEnums.h"
-#include "Groups/Group.h"
-#include "Entities/Item.h"
-#endif
-#ifndef TRINITY
-#ifndef CMANGOS
-#include "Player.h"
-#else
-#include "Entities/Player.h"
-#endif
-#endif
-#ifndef CMANGOS
 #include "Map.h"
+#include "SharedDefines.h"
 #include "Weather.h"
 #include "World.h"
+#if defined ELUNA_VMANGOS
+#include "Player.h"
+#endif
 #else
+#include "Entities/Item.h"
+#include "Globals/SharedDefines.h"
+#include "Groups/Group.h"
 #include "Maps/Map.h"
+#include "Server/DBCEnums.h"
 #include "Weather/Weather.h"
 #include "World/World.h"
+#include "Entities/Player.h"
 #endif
-#include "Hooks.h"
-#include "ElunaUtility.h"
+
 #include <mutex>
 #include <memory>
 
@@ -46,74 +41,62 @@ extern "C"
 #include "lua.h"
 };
 
-#if defined(TRINITY) || AZEROTHCORE
-struct ItemTemplate;
-typedef BattlegroundTypeId BattleGroundTypeId;
-#else
-struct ItemPrototype;
-typedef ItemPrototype ItemTemplate;
-typedef SpellEffectIndex SpellEffIndex;
-struct SpellEntry;
-typedef SpellEntry SpellInfo;
-#ifdef CLASSIC
-typedef int Difficulty;
-#endif
-#endif
-#ifndef AZEROTHCORE
-struct AreaTriggerEntry;
-#else
-typedef AreaTrigger AreaTriggerEntry;
-#endif
 class AuctionHouseObject;
-struct AuctionEntry;
-#if defined(TRINITY) || AZEROTHCORE
-class Battleground;
-typedef Battleground BattleGround;
-#endif
 class Channel;
 class Corpse;
 class Creature;
 class CreatureAI;
-class GameObject;
-#if defined(TRINITY) || AZEROTHCORE
-class GameObjectAI;
-#endif
-class Guild;
-class Group;
-#if defined(TRINITY) || AZEROTHCORE
-class InstanceScript;
-typedef InstanceScript InstanceData;
-#else
-class InstanceData;
-#endif
 class ElunaInstanceAI;
+class GameObject;
+class Group;
+class Guild;
 class Item;
 class Pet;
 class Player;
 class Quest;
 class Spell;
 class SpellCastTargets;
-#if defined(TRINITY) || AZEROTHCORE
-class TempSummon;
-#elif defined CMANGOS
-class TemporarySpawn;
-typedef TemporarySpawn TempSummon;
-#else
-class TemporarySummon;
-typedef TemporarySummon TempSummon;
-#endif
-// class Transport;
 class Unit;
 class Weather;
 class WorldPacket;
-#ifndef CLASSIC
-#ifndef TBC
-#if defined(TRINITY) || AZEROTHCORE
+struct AreaTriggerEntry;
+struct AuctionEntry;
+
+#if defined ELUNA_TRINITY
+class Battleground;
+class GameObjectAI;
+class InstanceScript;
+class TempSummon;
 class Vehicle;
+struct ItemTemplate;
+typedef Battleground BattleGround;
+typedef BattlegroundTypeId BattleGroundTypeId;
+typedef InstanceScript InstanceData;
 #else
+class InstanceData;
+struct ItemPrototype;
+struct SpellEntry;
+typedef ItemPrototype ItemTemplate;
+typedef SpellEffectIndex SpellEffIndex;
+typedef SpellEntry SpellInfo;
+
+#if defined ELUNA_CMANGOS
+class TemporarySpawn;
+typedef TemporarySpawn TempSummon;
+#endif
+
+#if defined ELUNA_VMANGOS || ELUNA_MANGOS
+class TemporarySummon;
+typedef TemporarySummon TempSummon;
+#endif
+
+#if ELUNA_EXPANSION == EXP_CLASSIC
+typedef int Difficulty;
+#endif
+
+#if ELUNA_EXPANSION >= EXP_WOTLK
 class VehicleInfo;
 typedef VehicleInfo Vehicle;
-#endif
 #endif
 #endif
 
@@ -147,12 +130,14 @@ enum MethodRegisterState
 
 #define ELUNA_STATE_PTR "Eluna State Ptr"
 
-#if defined(TRINITY)
+#if defined ELUNA_TRINITY
 #define ELUNA_GAME_API TC_GAME_API
-#elif defined(AZEROTHCORE)
-#define ELUNA_GAME_API AC_GAME_API
+#define TRACKABLE_PTR_NAMESPACE ::Trinity::
 #else
 #define ELUNA_GAME_API
+#if defined ELUNA_CMANGOS
+#define TRACKABLE_PTR_NAMESPACE ::MaNGOS::
+#endif
 #endif
 
 class ELUNA_GAME_API Eluna
@@ -169,11 +154,13 @@ private:
     // Indicates that the lua state should be reloaded
     bool reload = false;
 
+#if !defined TRACKABLE_PTR_NAMESPACE
     // A counter for lua event stacks that occur (see event_level).
     // This is used to determine whether an object belongs to the current call stack or not.
     // 0 is reserved for always belonging to the call stack
     // 1 is reserved for a non valid callstackid
     uint64 callstackid = 2;
+#endif
     // A counter for the amount of nested events. When the event_level
     // reaches 0 we are about to return back to C++. At this point the
     // objects used during the event stack are invalidated.
@@ -187,10 +174,6 @@ private:
     // Whether or not Eluna is in compatibility mode. Used in some method wrappers.
     bool compatibilityMode;
 
-    // Index of the Eluna::StackTrace function pushed to the lua state stack when lua is opened
-    // We store the function to stack on lua open because it cannot be a pseudo-index (must be on stack) and we want access it on every call
-    int stacktraceFunctionStackIndex = 0;
-
     // Map from instance ID -> Lua table ref
     std::unordered_map<uint32, int> instanceDataRefs;
     // Map from map ID -> Lua table ref
@@ -200,7 +183,9 @@ private:
     void CloseLua();
     void DestroyBindStores();
     void CreateBindStores();
+#if !defined TRACKABLE_PTR_NAMESPACE
     void InvalidateObjects();
+#endif
 
     // Use ReloadEluna() to make eluna reload
     // This is called on world update to reload eluna
@@ -253,7 +238,7 @@ public:
     lua_State* L;
     EventMgr* eventMgr;
 
-#ifdef TRINITY
+#if defined ELUNA_TRINITY
     QueryCallbackProcessor queryProcessor;
     QueryCallbackProcessor& GetQueryProcessor() { return queryProcessor; }
 #endif
@@ -345,7 +330,9 @@ public:
 
     void RunScripts();
     bool HasLuaState() const { return L != NULL; }
+#if !defined TRACKABLE_PTR_NAMESPACE
     uint64 GetCallstackId() const { return callstackid; }
+#endif
     int Register(uint8 reg, uint32 entry, ObjectGuid guid, uint32 instanceId, uint32 event_id, int functionRef, uint32 shots);
     void UpdateEluna(uint32 diff);
 
@@ -470,11 +457,9 @@ public:
     bool OnQuestAccept(Player* pPlayer, GameObject* pGameObject, Quest const* pQuest);
     bool OnQuestReward(Player* pPlayer, GameObject* pGameObject, Quest const* pQuest, uint32 opt);
     void GetDialogStatus(const Player* pPlayer, const GameObject* pGameObject);
-#ifndef CLASSIC
-#ifndef TBC
+#if ELUNA_EXPANSION >= EXP_WOTLK
     void OnDestroyed(GameObject* pGameObject, WorldObject* attacker);
     void OnDamaged(GameObject* pGameObject, WorldObject* attacker);
-#endif
 #endif
     void OnLootStateChanged(GameObject* pGameObject, uint32 state);
     void OnGameObjectStateChanged(GameObject* pGameObject, uint32 state);
@@ -500,7 +485,7 @@ public:
     void OnFreeTalentPointsChanged(Player* pPlayer, uint32 newPoints);
     void OnTalentsReset(Player* pPlayer, bool noCost);
     void OnMoneyChanged(Player* pPlayer, int32& amount);
-#ifdef CATA
+#if ELUNA_EXPANSION >= EXP_CATA
     void OnMoneyChanged(Player* pPlayer, int64& amount);
 #endif
     void OnGiveXP(Player* pPlayer, uint32& amount, Unit* pVictim);
@@ -528,15 +513,13 @@ public:
     void HandleGossipSelectOption(Player* pPlayer, uint32 menuId, uint32 sender, uint32 action, const std::string& code);
     void OnAchievementComplete(Player* pPlayer, uint32 achievementId);
 
-#ifndef CLASSIC
-#ifndef TBC
+#if ELUNA_EXPANSION >= EXP_WOTLK
     /* Vehicle */
     void OnInstall(Vehicle* vehicle);
     void OnUninstall(Vehicle* vehicle);
     void OnInstallAccessory(Vehicle* vehicle, Creature* accessory);
     void OnAddPassenger(Vehicle* vehicle, Unit* passenger, int8 seatId);
     void OnRemovePassenger(Vehicle* vehicle, Unit* passenger);
-#endif
 #endif
 
     /* AreaTrigger */
@@ -559,11 +542,9 @@ public:
     void OnCreate(Guild* guild, Player* leader, const std::string& name);
     void OnDisband(Guild* guild);
     void OnMemberWitdrawMoney(Guild* guild, Player* player, uint32& amount, bool isRepair);
-#ifdef CATA
-    void OnMemberWitdrawMoney(Guild* guild, Player* player, uint64& amount, bool isRepair);
-#endif
     void OnMemberDepositMoney(Guild* guild, Player* player, uint32& amount);
-#ifdef CATA
+#if ELUNA_EXPANSION >= EXP_CATA
+    void OnMemberWitdrawMoney(Guild* guild, Player* player, uint64& amount, bool isRepair);
     void OnMemberDepositMoney(Guild* guild, Player* player, uint64& amount);
 #endif
     void OnItemMove(Guild* guild, Player* player, Item* pItem, bool isSrcBank, uint8 srcContainer, uint8 srcSlotId, bool isDestBank, uint8 destContainer, uint8 destSlotId);
@@ -576,11 +557,7 @@ public:
     void OnRemoveMember(Group* group, ObjectGuid guid, uint8 method);
     void OnChangeLeader(Group* group, ObjectGuid newLeaderGuid, ObjectGuid oldLeaderGuid);
     void OnDisband(Group* group);
-#if defined (TRINITY) && defined (CATA)
-    void OnCreate(Group* group, ObjectGuid leaderGuid, GroupFlags groupType);
-#else
     void OnCreate(Group* group, ObjectGuid leaderGuid, GroupType groupType);
-#endif
     bool OnMemberAccept(Group* group, Player* player);
 
     /* Map */
@@ -607,11 +584,7 @@ public:
 
     /* World */
     void OnOpenStateChange(bool open);
-#ifndef AZEROTHCORE
     void OnConfigLoad(bool reload);
-#else
-    void OnConfigLoad(bool reload, bool isBefore);
-#endif
     void OnShutdownInitiate(ShutdownExitCode code, ShutdownMask mask);
     void OnShutdownCancel();
     void OnStartup();
@@ -621,11 +594,7 @@ public:
 
     /* Battle Ground */
     void OnBGStart(BattleGround* bg, BattleGroundTypeId bgId, uint32 instanceId);
-#if AZEROTHCORE
-    void OnBGEnd(BattleGround* bg, BattleGroundTypeId bgId, uint32 instanceId, TeamId winner);
-#else
     void OnBGEnd(BattleGround* bg, BattleGroundTypeId bgId, uint32 instanceId, Team winner);
-#endif
     void OnBGCreate(BattleGround* bg, BattleGroundTypeId bgId, uint32 instanceId);
     void OnBGDestroy(BattleGround* bg, BattleGroundTypeId bgId, uint32 instanceId);
 

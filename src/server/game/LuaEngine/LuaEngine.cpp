@@ -27,7 +27,7 @@ extern "C"
 // Additional lua libraries
 };
 
-extern void RegisterFunctions(Eluna* E);
+extern void RegisterMethods(Eluna* E);
 
 void Eluna::_ReloadEluna()
 {
@@ -78,7 +78,12 @@ CreatureUniqueBindings(NULL)
 {
     OpenLua();
     eventMgr = new EventMgr(this);
-    RunScripts();
+
+    // if the script cache is ready, run scripts, otherwise flag state for reload
+    if (sElunaLoader->GetCacheState() == SCRIPT_CACHE_READY)
+        RunScripts();
+    else
+        reload = true;
 }
 
 Eluna::~Eluna()
@@ -98,7 +103,6 @@ void Eluna::CloseLua()
     if (L)
         lua_close(L);
     L = NULL;
-    stacktraceFunctionStackIndex = 0;
 
     instanceDataRefs.clear();
     continentDataRefs.clear();
@@ -109,8 +113,11 @@ static int PrecompiledLoader(lua_State* L)
     const char* modname = lua_tostring(L, 1);
     if (modname == NULL)
         return 0;
-    auto it = std::find_if(sElunaLoader->combined_scripts.begin(), sElunaLoader->combined_scripts.end(), [modname](const LuaScript& script) { return script.filename == modname; });
-    if (it == sElunaLoader->combined_scripts.end()) {
+
+    const std::vector<LuaScript>& scripts = sElunaLoader->GetLuaScripts();
+
+    auto it = std::find_if(scripts.begin(), scripts.end(), [modname](const LuaScript& script) { return script.filename == modname; });
+    if (it == scripts.end()) {
         lua_pushfstring(L, "\n\tno precompiled script '%s' found", modname);
         return 1;
     }
@@ -137,16 +144,18 @@ void Eluna::OpenLua()
     // open base lua libraries
     luaL_openlibs(L);
 
-    // open additional lua libraries
-
     // Register methods and functions
-    RegisterFunctions(this);
+    RegisterMethods(this);
+
+    // get require paths
+    const std::string& requirepath = sElunaLoader->GetRequirePath();
+    const std::string& requirecpath = sElunaLoader->GetRequireCPath();
 
     // Set lua require folder paths (scripts folder structure)
     lua_getglobal(L, "package");
-    lua_pushstring(L, sElunaLoader->lua_requirepath.c_str());
+    lua_pushstring(L, requirepath.c_str());
     lua_setfield(L, -2, "path");
-    lua_pushstring(L, sElunaLoader->lua_requirecpath.c_str());
+    lua_pushstring(L, requirecpath.c_str());
     lua_setfield(L, -2, "cpath");
     // Set package.loaders loader for precompiled scripts
     lua_getfield(L, -1, "loaders");
@@ -164,10 +173,6 @@ void Eluna::OpenLua()
     lua_pushcfunction(L, &PrecompiledLoader);
     lua_rawseti(L, -2, newLoaderIndex);
     lua_pop(L, 2); // pop loaders/searchers table, pop package table
-
-    // Leave StackTrace function on stack and save reference to it
-    lua_pushcfunction(L, &StackTrace);
-    stacktraceFunctionStackIndex = lua_gettop(L);
 }
 
 void Eluna::CreateBindStores()
@@ -255,7 +260,9 @@ void Eluna::RunScripts()
     lua_getglobal(L, "require");
     // Stack: require
 
-    for (auto it = sElunaLoader->combined_scripts.begin(); it != sElunaLoader->combined_scripts.end(); ++it)
+    const std::vector<LuaScript>& scripts = sElunaLoader->GetLuaScripts();
+
+    for (auto it = scripts.begin(); it != scripts.end(); ++it)
     {
         // if the Eluna state is in compatibility mode, it should load all scripts, including those tagged with a specific map ID
         if (!GetCompatibilityMode())
@@ -297,15 +304,13 @@ void Eluna::RunScripts()
     OnLuaStateOpen();
 }
 
+#if !defined TRACKABLE_PTR_NAMESPACE
 void Eluna::InvalidateObjects()
 {
     ++callstackid;
-#ifdef TRINITY
-    ASSERT(callstackid, "Callstackid overflow");
-#else
     ASSERT(callstackid && "Callstackid overflow");
-#endif
 }
+#endif
 
 void Eluna::Report(lua_State* _L)
 {
@@ -360,16 +365,24 @@ bool Eluna::ExecuteCall(int params, int res)
     }
 
     bool usetrace = sElunaConfig->GetConfig(CONFIG_ELUNA_TRACEBACK);
-    if (usetrace && !lua_iscfunction(L, stacktraceFunctionStackIndex))
+    if (usetrace)
     {
-        ELUNA_LOG_ERROR("[Eluna]: Cannot execute call: registered value is %s, not a c-function.", luaL_tolstring(L, stacktraceFunctionStackIndex, NULL));
-        ASSERT(false); // stack probably corrupt
+        lua_pushcfunction(L, &StackTrace);
+        // Stack: function, [parameters], traceback
+        lua_insert(L, base);
+        // Stack: traceback, function, [parameters]
     }
 
     // Objects are invalidated when event_level hits 0
     ++event_level;
-    int result = lua_pcall(L, params, res, usetrace ? stacktraceFunctionStackIndex : 0);
+    int result = lua_pcall(L, params, res, usetrace ? base : 0);
     --event_level;
+
+    if (usetrace)
+    {
+        // Stack: traceback, [results or errmsg]
+        lua_remove(L, base);
+    }
     // Stack: [results or errmsg]
 
     // lua_pcall returns 0 on success.
@@ -960,21 +973,27 @@ int Eluna::Register(uint8 regtype, uint32 entry, ObjectGuid guid, uint32 instanc
     }
     luaL_unref(L, LUA_REGISTRYINDEX, functionRef);
     std::ostringstream oss;
-    oss << "regtype " << static_cast<uint32>(regtype) << ", event " << event_id << ", entry " << entry << ", guid " << guid.GetRawValue() << ", instance " << instanceId;
+    oss << "regtype " << static_cast<uint32>(regtype) << ", event " << event_id << ", entry " << entry << ", guid " <<
+#if defined ELUNA_TRINITY
+        guid.ToHexString()
+#else
+        guid.GetRawValue()
+#endif
+        << ", instance " << instanceId;
     luaL_error(L, "Unknown event type (%s)", oss.str().c_str());
     return 0;
 }
 
 void Eluna::UpdateEluna(uint32 diff)
 {
-    if (reload)
-#ifdef TRINITY
+    if (reload && sElunaLoader->GetCacheState() == SCRIPT_CACHE_READY)
+#if defined ELUNA_TRINITY
         if(!GetQueryProcessor().HasPendingCallbacks())
 #endif
             _ReloadEluna();
 
     eventMgr->globalProcessor->Update(diff);
-#ifdef TRINITY
+#if defined ELUNA_TRINITY
     GetQueryProcessor().ProcessReadyCallbacks();
 #endif
 }
@@ -989,8 +1008,10 @@ void Eluna::CleanUpStack(int number_of_arguments)
     lua_pop(L, number_of_arguments + 1); // Add 1 because the caller doesn't know about `event_id`.
     // Stack: (empty)
 
+#if !defined TRACKABLE_PTR_NAMESPACE
     if (event_level == 0)
         InvalidateObjects();
+#endif
 }
 
 /*

@@ -145,8 +145,9 @@ Battleground::Battleground()
 Battleground::~Battleground()
 {
 #ifdef ELUNA
-    if (Eluna* e = GetBgMap()->GetEluna())
-        e->OnBGDestroy(this, GetTypeID(), GetInstanceID());
+    if(m_Map)
+        if (Eluna* e = m_Map->GetEluna())
+            e->OnBGDestroy(this, GetTypeID(), GetInstanceID());
 #endif
 
     // remove objects and creatures
@@ -836,7 +837,7 @@ void Battleground::EndBattleground(uint32 winner)
                     BotMgr::ReviveBot(const_cast<Creature*>(bot));
                 else
                 {
-                    bot->GetBotAI()->UnsummonAll();
+                    bot->GetBotAI()->UnsummonAll(false);
                     const_cast<Creature*>(bot)->InterruptNonMeleeSpells(true);
                     const_cast<Creature*>(bot)->RemoveAllControlled();
                     const_cast<Creature*>(bot)->SetUnitFlag(UNIT_FLAG_IMMUNE);
@@ -1273,7 +1274,7 @@ void Battleground::AddPlayer(Player* player)
 void Battleground::AddBot(Creature* bot)
 {
     ObjectGuid guid = bot->GetGUID();
-    uint32 team = (BotDataMgr::GetTeamIdForFaction(bot->GetFaction()) == TEAM_ALLIANCE) ? ALLIANCE : HORDE;
+    uint32 team = !bot->IsFreeBot() ? bot->GetBotOwner()->GetBGTeam() : (BotDataMgr::GetTeamIdForFaction(bot->GetFaction()) == TEAM_ALLIANCE) ? uint32(ALLIANCE) : uint32(HORDE);
 
     // Add to list/maps
     BattlegroundBot bb;
@@ -2098,7 +2099,6 @@ void Battleground::HandleBotKillPlayer(Creature* killer, Player* victim)
         RewardXPAtKill(killer, victim);
     }
 }
-
 void Battleground::HandleBotKillBot(Creature* killer, Creature* victim)
 {
     UpdateBotScore(victim, SCORE_DEATHS, 1);
@@ -2173,15 +2173,15 @@ TeamId Battleground::GetBotTeamId(ObjectGuid guid) const
     uint32 team = GetBotTeam(guid);
     switch (team)
     {
-    case ALLIANCE:
-        return TEAM_ALLIANCE;
-    case HORDE:
-        return TEAM_HORDE;
-    case TEAM_ALLIANCE:
-    case TEAM_HORDE:
-        return TeamId(team);
-    default:
-        return TEAM_NEUTRAL;
+        case ALLIANCE:
+            return TEAM_ALLIANCE;
+        case HORDE:
+            return TEAM_HORDE;
+        case TEAM_ALLIANCE:
+        case TEAM_HORDE:
+            return TeamId(team);
+        default:
+            return TEAM_NEUTRAL;
     }
 }
 

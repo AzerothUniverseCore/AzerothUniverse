@@ -52,7 +52,7 @@ void Totem::Update(uint32 time)
         }
     }
     else
-        //end npcbot
+    //end npcbot
     if (!GetOwner()->IsAlive() || !IsAlive())
     {
         UnSummon();                                         // remove self

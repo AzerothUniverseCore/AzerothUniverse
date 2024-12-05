@@ -5,6 +5,7 @@
 #include "botspell.h"
 #include "bottext.h"
 #include "botmgr.h"
+#include "Chat.h"
 #include "Creature.h"
 #include "Log.h"
 #include "Player.h"
@@ -79,6 +80,17 @@ public:
                     {
                         WhisperTo(player, bot_ai::LocalizedNpcText(player, BOT_TEXT_BOTGIVER_TOO_MANY_BOTS).c_str());
                         break;
+                    }
+
+                    if (uint32 maxBotsPerAccount = BotMgr::GetMaxAccountBots())
+                    {
+                        uint32 accountBotsCount = BotDataMgr::GetAccountBotsCount(player->GetSession()->GetAccountId());
+                        if (accountBotsCount >= maxBotsPerAccount)
+                        {
+                            ChatHandler ch(player->GetSession());
+                            ch.PSendSysMessage(bot_ai::LocalizedNpcText(player, BOT_TEXT_HIREFAIL_MAXBOTS_ACCOUNT).c_str(), accountBotsCount, maxBotsPerAccount);
+                            break;
+                        }
                     }
 
                     subMenu = true;
@@ -235,7 +247,7 @@ public:
                     if (!bot)
                     {
                         //possible but still
-                        TC_LOG_ERROR("entities.unit", "HIRE_NBOT_ENTRY: bot {} not found!", entry);
+                        BOT_LOG_ERROR("entities.unit", "HIRE_NBOT_ENTRY: bot {} not found!", entry);
                         break;
                     }
 
@@ -243,7 +255,7 @@ public:
                     if (bot->IsInCombat() || !bot->IsAlive() || bot_ai::CCed(bot) ||
                         bot->HasUnitState(UNIT_STATE_CASTING) || ai->GetBotOwnerGuid() || bot->HasAura(BERSERK))
                     {
-                        //TC_LOG_ERROR("entities.unit", "HIRE_NBOT_ENTRY: bot {} ({}) is unavailable all of the sudden!", entry);
+                        //BOT_LOG_ERROR("entities.unit", "HIRE_NBOT_ENTRY: bot {} ({}) is unavailable all of the sudden!", entry);
                         std::ostringstream failMsg;
                         failMsg << bot->GetName() << bot_ai::LocalizedNpcText(player, BOT_TEXT_BOTGIVER__BOT_BUSY);
                         WhisperTo(player, failMsg.str().c_str());

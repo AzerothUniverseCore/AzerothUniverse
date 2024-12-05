@@ -162,10 +162,9 @@ namespace LuaAura
     /**
      * Remove this [Aura] from the [Unit] it is applied to.
      */
-    int Remove(Eluna* E, Aura* aura)
+    int Remove(Eluna* /*E*/, Aura* aura)
     {
         aura->Remove();
-        E->CHECKOBJ<ElunaObject>(1)->Invalidate();
         return 0;
     }
 
@@ -187,9 +186,7 @@ namespace LuaAura
         { "SetStackAmount", &LuaAura::SetStackAmount },
 
         // Other
-        { "Remove", &LuaAura::Remove },
-
-        { NULL, NULL, METHOD_REG_NONE }
+        { "Remove", &LuaAura::Remove }
     };
 };
 #endif

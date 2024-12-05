@@ -8,6 +8,10 @@
 #define PLAYERMETHODS_H
 
 #include "LuaValue.h"
+#include "NPCPackets.h"
+#include "PartyPackets.h"
+#include "Unit.h"
+#include <boost/callable_traits/args.hpp>
 
 /***
  * Inherits all methods from: [Object], [WorldObject], [Unit]
@@ -236,11 +240,7 @@ namespace LuaPlayer
      */
     int CanSpeak(Eluna* E, Player* player)
     {
-#ifndef CATA
         E->Push(player->GetSession()->CanSpeak());
-#else
-        E->Push(player->CanSpeak());
-#endif
         return 1;
     }
 
@@ -375,7 +375,6 @@ namespace LuaPlayer
         return 1;
     }
 
-#ifndef CATA
     /**
      * Returns 'true' if the [Player] satisfies all requirements to complete the repeatable quest entry.
      *
@@ -413,7 +412,6 @@ namespace LuaPlayer
 
         return 1;
     }
-#endif
 
     /**
      * Returns 'true' if the [Player] is a part of the Horde faction, 'false' otherwise.
@@ -470,6 +468,12 @@ namespace LuaPlayer
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player]s [Group] is visible for the other specific [Player].
+     *
+     * @param [Player] player
+     * @return bool isGroupVisible
+     */
     int IsGroupVisibleFor(Eluna* E, Player* player)
     {
         Player* target = E->CHECKOBJ<Player>(2);
@@ -531,6 +535,11 @@ namespace LuaPlayer
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] has GM invisibility active
+     *
+     * @return bool isGMVisible
+     */
     int IsGMVisible(Eluna* E, Player* player)
     {
         E->Push(player->isGMVisible());
@@ -548,6 +557,11 @@ namespace LuaPlayer
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] has the GM chat flag active
+     *
+     * @return bool isGMChatActive
+     */
     int IsGMChat(Eluna* E, Player* player)
     {
         E->Push(player->isGMChat());
@@ -631,6 +645,12 @@ namespace LuaPlayer
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] has received the reward for a specific [Quest] ID
+     *
+     * @param uint32 questId
+     * @return bool isQuestRewarded
+     */
     int HasReceivedQuestReward(Eluna* E, Player* player)
     {
         uint32 entry = E->CHECKVAL<uint32>(2);
@@ -639,59 +659,104 @@ namespace LuaPlayer
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] is currently flagged for outdoors PvP
+     *
+     * @return bool isPvPActive
+     */
     int IsOutdoorPvPActive(Eluna* E, Player* player)
     {
         E->Push(player->IsOutdoorPvPActive());
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] is currently immune to environmental damage
+     *
+     * @return bool isImmuneToEnv
+     */
     int IsImmuneToEnvironmentalDamage(Eluna* E, Player* player)
     {
         E->Push(player->IsImmuneToEnvironmentalDamage());
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] is currently in a random LFG dungeon
+     *
+     * @return bool isInRandomLFG
+     */
     int InRandomLfgDungeon(Eluna* E, Player* player)
     {
         E->Push(player->inRandomLfgDungeon());
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] is currently queued in LFG
+     *
+     * @return bool isUsingLFG
+     */
     int IsUsingLfg(Eluna* E, Player* player)
     {
         E->Push(player->isUsingLfg());
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] is never visible for other [Unit]s
+     *
+     * @return bool isNeverVisible
+     */
     int IsNeverVisible(Eluna* E, Player* player)
     {
-        // Possibly add a bool var here
-#ifdef CATA
-        E->Push(player->IsNeverVisible());
-#else
         E->Push(player->IsNeverVisible(true));
-#endif
         return 1;
     }
 
-    /*int CanFlyInZone(Eluna* E, Player* player)
-    {
-        uint32 mapid = E->CHECKVAL<uint32>(2);
-        uint32 zone = E->CHECKVAL<uint32>(2);
-
-        E->Push(player->IsKnowHowFlyIn(mapid, zone));
-        return 1;
-    }*/
-
+    /**
+     * Returns whether or not the [Player] has any pending dungeon bind
+     *
+     * @return bool hasPendingBind
+     */
     int HasPendingBind(Eluna* E, Player* player)
     {
         E->Push(player->HasPendingBind());
         return 1;
     }
 
+    /**
+     * Returns whether or not the [Player] is a recruiter
+     *
+     * @return bool isARecruiter
+     */
     int IsARecruiter(Eluna* E, Player* player)
     {
-        E->Push(player->GetSession()->IsARecruiter() || (player->GetSession()->GetRecruiterId() != 0));
+        E->Push(player->GetSession()->IsARecruiter());
+        return 1;
+    }
+
+    /**
+     * Returns whether or not the [Player] has been recruited
+     *
+     * @return bool isRecruited
+     */
+    int IsRecruited(Eluna* E, Player* player)
+    {
+        E->Push(player->GetSession()->GetRecruiterId() != 0);
+        return 1;
+    }
+
+    /**
+     * Returns whether or not the [Player] recruited the other [Player]
+     *
+     * @param [Player] recruit
+     * @return bool hasRecruited : returns 'true' if the [Player] recruited the other [Player], false otherwise
+     */
+    int HasRecruited(Eluna* E, Player* player)
+    {
+        Player* recruit = E->CHECKOBJ<Player>(2);
+        E->Push(recruit->GetSession()->GetRecruiterId() == player->GetSession()->GetAccountId());
         return 1;
     }
 
@@ -717,7 +782,6 @@ namespace LuaPlayer
         return 1;
     }
 
-#ifndef CATA
     /**
      * Returns the normal phase of the player instead of the actual phase possibly containing GM phase
      *
@@ -761,7 +825,6 @@ namespace LuaPlayer
         E->Push(player->GetShieldBlockValue());
         return 1;
     }
-#endif
 
     /**
      * Returns the [Player]s cooldown delay by specified [Spell] ID
@@ -926,7 +989,7 @@ namespace LuaPlayer
      * Returns skill temporary bonus value
      *
      * @param uint32 skill
-     * @param int16 bonusVal
+     * @return int16 bonusVal
      */
     int GetSkillTempBonusValue(Eluna* E, Player* player)
     {
@@ -940,7 +1003,7 @@ namespace LuaPlayer
      * Returns skill permanent bonus value
      *
      * @param uint32 skill
-     * @param int16 bonusVal
+     * @return int16 bonusVal
      */
     int GetSkillPermBonusValue(Eluna* E, Player* player)
     {
@@ -1063,11 +1126,7 @@ namespace LuaPlayer
      */
     int GetGuildRank(Eluna* E, Player* player) // TODO: Move to Guild Methods
     {
-#ifdef CATA
-        E->Push(player->GetGuildRank());
-#else
         E->Push(player->GetRank());
-#endif
         return 1;
     }
 
@@ -1526,31 +1585,50 @@ namespace LuaPlayer
         return 1;
     }
 
+    /**
+     * Returns the [Player]s recruit-a-friend recruiter account ID
+     *
+     * @return uint32 recruiterId
+     */
     int GetRecruiterId(Eluna* E, Player* player)
     {
         E->Push(player->GetSession()->GetRecruiterId());
         return 1;
     }
 
+    /**
+     * Returns the [Player]s selected [Player] or nil.
+     *
+     * @return [Player] selection
+     */
     int GetSelectedPlayer(Eluna* E, Player* player)
     {
         E->Push(player->GetSelectedPlayer());
         return 1;
     }
 
+    /**
+     * Returns the [Player]s selected [Unit].
+     *
+     * @return [Unit] selection
+     */
     int GetSelectedUnit(Eluna* E, Player* player)
     {
         E->Push(player->GetSelectedUnit());
         return 1;
     }
 
+    /**
+     * Returns the closest [GameObject] to the [Player].
+     * 
+     * @return [GameObject] gameobject
+     */
     int GetNearbyGameObject(Eluna* E, Player* player)
     {
         E->Push(ChatHandler(player->GetSession()).GetNearbyGameObject());
         return 1;
     }
 
-#ifndef CATA
     /**
      * Returns the amount of mails in the [Player]s mailbox
      *
@@ -1583,7 +1661,6 @@ namespace LuaPlayer
         E->Push(player->GetXPForNextLevel());
         return 1;
     }
-#endif
 
     /**
      * Locks the player controls and disallows all movement and casting.
@@ -1692,11 +1769,7 @@ namespace LuaPlayer
         if (!player->GetGuildId())
             return 0;
 
-#ifdef CATA
-        player->SetGuildRank(rank);
-#else
         player->SetRank(rank);
-#endif
         return 0;
     }
 
@@ -1841,8 +1914,10 @@ namespace LuaPlayer
     /**
      * Sets the [Player]s gender to gender specified
      *
-     * - GENDER_MALE    = 0
-     * - GENDER_FEMALE  = 1
+     * @table
+     * @columns [Gender, ID]
+     * @values [GENDER_MALE, 0]
+     * @values [GENDER_FEMALE, 1]
      *
      * @param [Gender] gender
      */
@@ -1869,7 +1944,6 @@ namespace LuaPlayer
         return 0;
     }
 
-#ifndef CATA
     /**
      * Sets the [Player]s Arena Points to the amount specified
      *
@@ -1893,7 +1967,6 @@ namespace LuaPlayer
         player->SetHonorPoints(honorP);
         return 0;
     }
-#endif
 
     /**
      * Sets the [Player]s amount of Lifetime Honorable Kills to the value specified
@@ -1914,7 +1987,9 @@ namespace LuaPlayer
      */
     int SetCoinage(Eluna* E, Player* player)
     {
-        uint32 amt = E->CHECKVAL<uint32>(2);
+        using MoneyType = std::tuple_element_t<1, boost::callable_traits::args_t<decltype(&Player::SetMoney)>>;
+
+        MoneyType amt = E->CHECKVAL<MoneyType>(2);
         player->SetMoney(amt);
         return 0;
     }
@@ -1941,7 +2016,6 @@ namespace LuaPlayer
         player->SetHomebind(loc, areaId);
         return 0;
     }
-
 
     /**
      * Adds the specified title to the [Player]s list of known titles
@@ -1981,28 +2055,48 @@ namespace LuaPlayer
         bool apply = E->CHECKVAL<bool>(2, true);
 
         if(apply)
-#ifdef CATA
-            player->SetByteFlag(UNIT_FIELD_BYTES_2, UNIT_BYTES_2_OFFSET_PVP_FLAG, UNIT_BYTE2_FLAG_FFA_PVP);
-        else
-            player->RemoveByteFlag(UNIT_FIELD_BYTES_2, UNIT_BYTES_2_OFFSET_PVP_FLAG, UNIT_BYTE2_FLAG_FFA_PVP);
-#else
             player->SetPvpFlag(UNIT_BYTE2_FLAG_FFA_PVP);
         else
             player->RemovePvpFlag(UNIT_BYTE2_FLAG_FFA_PVP);
-#endif
         return 0;
     }
 
-
-#ifndef CATA
+    /**
+     * Sets the [Player]s movement to the provided movement type
+     *
+     * @table
+     * @columns [movementType, ID]
+     * @values [MOVE_ROOT, 1]
+     * @values [MOVE_UNROOT, 2]
+     * @values [MOVE_WATER_WALK, 3]
+     * @values [MOVE_LAND_WALK, 4]
+     * 
+     * @param int32 movementType
+     */
     int SetMovement(Eluna* E, Player* player)
     {
         int32 pType = E->CHECKVAL<int32>(2);
 
-        player->SetMovement((PlayerMovementType)pType);
+        switch (pType)
+        {
+            case 1: // MOVE_ROOT
+                player->SetRooted(true);
+                break;
+            case 2: // MOVE_UNROOT
+                player->SetRooted(false);
+                break;
+            case 3: // MOVE_WATER_WALK
+                player->SetWaterWalking(true);
+                break;
+            case 4: // MOVE_LAND_WALK
+                player->SetWaterWalking(false);
+                break;
+            default:
+                break;
+        }
+
         return 0;
     }
-#endif
 
     /**
      * Resets the [Player]s pets talent points
@@ -2036,7 +2130,6 @@ namespace LuaPlayer
         return 0;
     }
 
-#ifndef CATA
     /**
      * Adds or detracts from the [Player]s current Arena Points
      *
@@ -2062,7 +2155,6 @@ namespace LuaPlayer
         player->ModifyHonorPoints(amount);
         return 0;
     }
-#endif
 
     /**
      * Saves the [Player] to the database
@@ -2094,17 +2186,10 @@ namespace LuaPlayer
     int Mute(Eluna* E, Player* player)
     {
         uint32 muteseconds = E->CHECKVAL<uint32>(2);
-        /*const char* reason = luaL_checkstring(E, 2);*/ // Mangos does not have a reason field in database.
 
         time_t muteTime = time(NULL) + muteseconds;
         player->GetSession()->m_muteTime = muteTime;
-#ifdef WOTLK
         LoginDatabase.PExecute("UPDATE account SET mutetime = {} WHERE id = {}", muteTime, player->GetSession()->GetAccountId());
-#else
-        std::ostringstream oss;
-        oss << "UPDATE account SET mutetime = " << muteTime << " WHERE id = " << player->GetSession()->GetAccountId();
-        LoginDatabase.PExecute("%s", oss.str().c_str());
-#endif
         return 0;
     }
 
@@ -2136,16 +2221,7 @@ namespace LuaPlayer
     {
         Unit* unit = E->CHECKOBJ<Unit>(2);
 
-        AuctionHouseEntry const* ahEntry = AuctionHouseMgr::GetAuctionHouseEntry(unit->GetFaction());
-        if (!ahEntry)
-            return 0;
-
-        WorldPacket data(MSG_AUCTION_HELLO, 12);
-        data << unit->GET_GUID();
-        data << uint32(ahEntry->ID);
-        data << uint8(1);
-
-        player->GetSession()->SendPacket(&data);
+        player->GetSession()->SendAuctionHello(unit->GET_GUID(), unit);
         return 0;
     }
 
@@ -2219,11 +2295,7 @@ namespace LuaPlayer
     {
         Creature* obj = E->CHECKOBJ<Creature>(2);
 
-#ifdef CATA
-        player->GetSession()->SendTrainerList(obj, NULL);
-#else
         player->GetSession()->SendTrainerList(obj);
-#endif
         return 0;
     }
 
@@ -2468,11 +2540,7 @@ namespace LuaPlayer
      */
     int ResetTalentsCost(Eluna* E, Player* player)
     {
-#ifdef CATA
-        E->Push(player->GetNextResetTalentsCost());
-#else
         E->Push(player->ResetTalentsCost());
-#endif
         return 1;
     }
 
@@ -2719,23 +2787,15 @@ namespace LuaPlayer
             return 0;
 
         // check item starting quest (it can work incorrectly if added without item in inventory)
-#ifndef CATA
         ItemTemplateContainer const& itc = sObjectMgr->GetItemTemplateStore();
         auto itr = std::find_if(std::begin(itc), std::end(itc), [quest](ItemTemplateContainer::value_type const& value)
-        {
-            return value.second.StartQuest == quest->GetQuestId();
-        });
+            {
+                return value.second.StartQuest == quest->GetQuestId();
+            });
 
         if (itr != std::end(itc))
             return 0;
 
-#elif CATA
-        ItemTemplateContainer const* itc = sObjectMgr->GetItemTemplateStore();
-        ItemTemplateContainer::const_iterator result = std::find_if(itc->begin(), itc->end(), [quest](ItemTemplateContainer::value_type const& value)
-        {
-            return value.second.ExtendedData->StartQuest == quest->GetQuestId();
-        });
-#endif
         // ok, normal (creature/GO starting) quest
         if (player->CanAddQuest(quest, true))
             player->AddQuestAndCheckCompletion(quest, NULL);
@@ -2878,36 +2938,32 @@ namespace LuaPlayer
     /**
      * Equips the given item or item entry to the given slot. Returns the equipped item or nil.
      *
-     *     enum EquipmentSlots // 19 slots
-     *     {
-     *         EQUIPMENT_SLOT_START        = 0,
-     *         EQUIPMENT_SLOT_HEAD         = 0,
-     *         EQUIPMENT_SLOT_NECK         = 1,
-     *         EQUIPMENT_SLOT_SHOULDERS    = 2,
-     *         EQUIPMENT_SLOT_BODY         = 3,
-     *         EQUIPMENT_SLOT_CHEST        = 4,
-     *         EQUIPMENT_SLOT_WAIST        = 5,
-     *         EQUIPMENT_SLOT_LEGS         = 6,
-     *         EQUIPMENT_SLOT_FEET         = 7,
-     *         EQUIPMENT_SLOT_WRISTS       = 8,
-     *         EQUIPMENT_SLOT_HANDS        = 9,
-     *         EQUIPMENT_SLOT_FINGER1      = 10,
-     *         EQUIPMENT_SLOT_FINGER2      = 11,
-     *         EQUIPMENT_SLOT_TRINKET1     = 12,
-     *         EQUIPMENT_SLOT_TRINKET2     = 13,
-     *         EQUIPMENT_SLOT_BACK         = 14,
-     *         EQUIPMENT_SLOT_MAINHAND     = 15,
-     *         EQUIPMENT_SLOT_OFFHAND      = 16,
-     *         EQUIPMENT_SLOT_RANGED       = 17,
-     *         EQUIPMENT_SLOT_TABARD       = 18,
-     *         EQUIPMENT_SLOT_END          = 19
-     *     };
+     * @table
+     * @columns [EquipSlot, ID]
+     * @values [EQUIPMENT_SLOT_HEAD, 0]
+     * @values [EQUIPMENT_SLOT_NECK, 1]
+     * @values [EQUIPMENT_SLOT_SHOULDERS, 2]
+     * @values [EQUIPMENT_SLOT_BODY, 3]
+     * @values [EQUIPMENT_SLOT_CHEST, 4]
+     * @values [EQUIPMENT_SLOT_WAIST, 5]
+     * @values [EQUIPMENT_SLOT_LEGS, 6]
+     * @values [EQUIPMENT_SLOT_FEET, 7]
+     * @values [EQUIPMENT_SLOT_WRISTS, 8]
+     * @values [EQUIPMENT_SLOT_HANDS, 9]
+     * @values [EQUIPMENT_SLOT_FINGER1, 10]
+     * @values [EQUIPMENT_SLOT_FINGER2, 11]
+     * @values [EQUIPMENT_SLOT_TRINKET1, 12]
+     * @values [EQUIPMENT_SLOT_TRINKET2, 13]
+     * @values [EQUIPMENT_SLOT_BACK, 14]
+     * @values [EQUIPMENT_SLOT_MAINHAND, 15]
+     * @values [EQUIPMENT_SLOT_OFFHAND, 16]
+     * @values [EQUIPMENT_SLOT_RANGED, 17]
+     * @values [EQUIPMENT_SLOT_TABARD, 18]
      *
-     *     enum InventorySlots // 4 slots
-     *     {
-     *         INVENTORY_SLOT_BAG_START    = 19,
-     *         INVENTORY_SLOT_BAG_END      = 23
-     *     };
+     * @table
+     * @columns [BagSlot, ID]
+     * @values [INVENTORY_SLOT_BAG_START, 19]
+     * @values [INVENTORY_SLOT_BAG_END, 23]
      *
      * @proto equippedItem = (item, slot)
      * @proto equippedItem = (entry, slot)
@@ -3013,7 +3069,6 @@ namespace LuaPlayer
         return 0;
     }
 
-#ifndef CATA
     /**
      * Advances all of the [Player]s weapon skills to the maximum amount available
      */
@@ -3022,7 +3077,6 @@ namespace LuaPlayer
         player->UpdateWeaponsSkillsToMaxSkillsForLevel();
         return 0;
     }
-#endif
 
     /**
      * Advances all of the [Player]s skills to the amount specified
@@ -3086,30 +3140,27 @@ namespace LuaPlayer
         float z = E->CHECKVAL<float>(5);
         float o = E->CHECKVAL<float>(6);
 
-#ifdef CATA
-        if (player->IsInFlight())
-        {
-            player->GetMotionMaster()->MovementExpired();
-            player->m_taxi.ClearTaxiDestinations();
-        }
-        else
-            player->SaveRecallPosition();
-#else
         if (player->IsInFlight())
             player->FinishTaxiFlight();
         else
             player->SaveRecallPosition();
 
-#endif
         E->Push(player->TeleportTo(mapId, x, y, z, o));
         return 1;
     }
 
+    /**
+     * Adds or detracts from the [Player]s current lifetime kill count
+     *
+     * @param int32 kills : Positive number to add, negative number to detract
+     */
     int AddLifetimeKills(Eluna* E, Player* player)
     {
-        uint32 val = E->CHECKVAL<uint32>(2);
+        int32 val = E->CHECKVAL<int32>(2);
         uint32 currentKills = player->GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS);
-        player->SetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, currentKills + val);
+        uint32 kills = static_cast<uint32>((static_cast<int32>(currentKills) + val) < 0 ? 0 : currentKills + val);
+
+        player->SetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, kills);
         return 0;
     }
 
@@ -3163,10 +3214,7 @@ namespace LuaPlayer
         }
         else
         {
-            bool all = itemCount >= item->GetCount();
             player->DestroyItemCount(item, itemCount, true);
-            if (all)
-                E->CHECKOBJ<ElunaObject>(2)->Invalidate();
         }
         return 0;
     }
@@ -3316,11 +3364,7 @@ namespace LuaPlayer
      */
     int KickPlayer(Eluna* /*E*/, Player* player)
     {
-#ifndef CATA
         player->GetSession()->KickPlayer("PlayerMethods::KickPlayer Kick the player");
-#else
-        player->GetSession()->KickPlayer();
-#endif
         return 0;
     }
 
@@ -3331,7 +3375,9 @@ namespace LuaPlayer
      */
     int ModifyMoney(Eluna* E, Player* player)
     {
-        int32 amt = E->CHECKVAL<int32>(2);
+        using MoneyType = std::tuple_element_t<1, boost::callable_traits::args_t<decltype(&Player::ModifyMoney)>>;
+
+        MoneyType amt = E->CHECKVAL<MoneyType>(2);
 
         player->ModifyMoney(amt);
         return 1;
@@ -3507,15 +3553,14 @@ namespace LuaPlayer
         uint32 data = E->CHECKVAL<uint32>(6);
         std::string iconText = E->CHECKVAL<std::string>(7);
 
-        WorldPacket packet(SMSG_GOSSIP_POI, 4 + 4 + 4 + 4 + 4 + 10);
-        packet << flags;
-        packet << x;
-        packet << y;
-        packet << icon;
-        packet << data;
-        packet << iconText;
+        WorldPackets::NPC::GossipPOI packet;
+        packet.Name = iconText;
+        packet.Flags = flags;
+        packet.Pos.Pos.Relocate(x, y);
+        packet.Icon = icon;
+        packet.Importance = data;
 
-        player->GetSession()->SendPacket(&packet);
+        player->SendDirectMessage(packet.Write());
         return 0;
     }
 
@@ -3556,12 +3601,7 @@ namespace LuaPlayer
         if (!quest)
             return 0;
 
-#ifdef CATA
-        player->PlayerTalkClass->SendQuestGiverQuestDetails(quest, player->GET_GUID(), activateAccept, true);
-#else
         player->PlayerTalkClass->SendQuestGiverQuestDetails(quest, player->GET_GUID(), activateAccept);
-
-#endif
         return 0;
     }
 
@@ -3626,18 +3666,9 @@ namespace LuaPlayer
 
         if (success)
         {
-#ifdef CATA
-            WorldPacket data(SMSG_PARTY_INVITE, 10);                // guess size
-#else
-            WorldPacket data(SMSG_GROUP_INVITE, 10);                // guess size
-#endif
-            data << uint8(1);                                       // invited/already in group flag
-            data << player->GetName();                              // max len 48
-            data << uint32(0);                                      // unk
-            data << uint8(0);                                       // count
-            data << uint32(0);                                      // unk
-
-            invited->GetSession()->SendPacket(&data);
+            WorldPackets::Party::PartyInvite partyInvite;
+            partyInvite.Initialize(player, 0, true);
+            invited->SendDirectMessage(partyInvite.Write());
         }
 
         E->Push(success);
@@ -3715,12 +3746,23 @@ namespace LuaPlayer
         return 0;
     }
 
+    /**
+     * Binds the [Player] to their current instance.
+     */
     int BindToInstance(Eluna* /*E*/, Player* player)
     {
         player->BindToInstance();
         return 0;
     }
 
+    /**
+     * Adds a talent to the [Player] for the specified spec and learning status.
+     *
+     * @param uint32 spellId : ID of the spell for the talent
+     * @param uint8 spec : The spec to which the talent applies
+     * @param bool learning = true : Whether the talent is being learned
+     * @return bool success : True if the talent was added, false otherwise
+     */
     int AddTalent(Eluna* E, Player* player)
     {
         uint32 spellId = E->CHECKVAL<uint32>(2);
@@ -3735,29 +3777,34 @@ namespace LuaPlayer
         return 1;
     }
 
-    /*int GainSpellComboPoints(Eluna* E, Player* player)
-    {
-    int8 count = E->CHECKVAL<int8>(2);
-
-    player->GainSpellComboPoints(count);
-    return 0;
-    }*/
-
+    /**
+     * Grants kill credit for a specific [Craeture] or [GameObject].
+     *
+     * @param uint32 entryId : the ID of the [Creature] or [GameObject] to award credit for.
+     */
     int KillGOCredit(Eluna* E, Player* player)
     {
         uint32 entry = E->CHECKVAL<uint32>(2);
-        ObjectGuid guid = E->CHECKVAL<ObjectGuid>(3);
+        ObjectGuid guid = E->CHECKVAL<ObjectGuid>(3, ObjectGuid::Empty);
 
         player->KillCreditGO(entry, guid);
         return 0;
     }
 
+    /**
+     * Grants a player kill credit.
+     */
     int KilledPlayerCredit(Eluna* /*E*/, Player* player)
     {
         player->KilledPlayerCredit();
         return 0;
     }
 
+    /**
+     * Removes a quest from the rewarded quests for the [Player].
+     *
+     * @param uint32 questId : the ID of the quest to remove.
+     */
     int RemoveRewardedQuest(Eluna* E, Player* player)
     {
         uint32 entry = E->CHECKVAL<uint32>(2);
@@ -3766,6 +3813,11 @@ namespace LuaPlayer
         return 0;
     }
 
+    /**
+     * Removes an active quest from the [Player].
+     *
+     * @param uint32 questId : the ID of the quest to remove.
+     */
     int RemoveActiveQuest(Eluna* E, Player* player)
     {
         uint32 entry = E->CHECKVAL<uint32>(2);
@@ -3774,6 +3826,22 @@ namespace LuaPlayer
         return 0;
     }
 
+    /**
+     * Summons a pet for the [Player].
+     *
+     * @table
+     * @columns [Summon Type, ID]
+     * @values [SUMMON_PET, 0]
+     * @values [HUNTER_PET, 1]
+     *
+     * @param uint32 entryId : the ID of the pet to summon.
+     * @param float x
+     * @param float y
+     * @param float z
+     * @param float o
+     * @param uint32 petType
+     * @param uint32 despawnTime
+     */
     int SummonPet(Eluna* E, Player* player)
     {
         uint32 entry = E->CHECKVAL<uint32>(2);
@@ -3791,15 +3859,44 @@ namespace LuaPlayer
         return 0;
     }
 
+    /**
+     * Removes the [Player]'s active pet.
+     *
+     * @table
+     * @columns [Save mode, ID, Comment]
+     * @values [PET_SAVE_AS_DELETED, -1, "Not saved"]
+     * @values [PET_SAVE_AS_CURRENT, 0, "In current slot (with the player)"]
+     * @values [PET_SAVE_FIRST_STABLE_SLOT, 1, ""]
+     * @values [PET_SAVE_SECOND_STABLE_SLOT, 2, ""]
+     * @values [PET_SAVE_THIRD_STABLE_SLOT, 3, ""]
+     * @values [PET_SAVE_LAST_STABLE_SLOT, 4, ""]
+     *
+     * @param int saveMode = -1
+     * @param bool returnReagent = false
+     * 
+     */
     int RemovePet(Eluna* E, Player* player)
     {
         int mode = E->CHECKVAL<int>(2, PET_SAVE_AS_DELETED);
-        bool returnreagent = E->CHECKVAL<bool>(2, false);
+        bool returnreagent = E->CHECKVAL<bool>(3, false);
 
         if (!player->GetPet())
             return 0;
 
         player->RemovePet(player->GetPet(), (PetSaveMode)mode, returnreagent);
+        return 0;
+    }
+
+    /**
+     * Runs a command as the [Player].
+     *
+     * @param string command : the command to run
+     */
+    int RunCommand(Eluna* E, Player* player)
+    {
+        const char* command = E->CHECKVAL<const char*>(2);
+        if (std::string(command).length() > 0)
+            ChatHandler(player->GetSession())._ParseCommands(command);
         return 0;
     }
 
@@ -3816,10 +3913,8 @@ namespace LuaPlayer
         { "GetGuild", &LuaPlayer::GetGuild },
         { "GetAccountId", &LuaPlayer::GetAccountId },
         { "GetAccountName", &LuaPlayer::GetAccountName },
-#ifndef CATA
         { "GetArenaPoints", &LuaPlayer::GetArenaPoints },
         { "GetHonorPoints", &LuaPlayer::GetHonorPoints },
-#endif
         { "GetLifetimeKills", &LuaPlayer::GetLifetimeKills },
         { "GetPlayerIP", &LuaPlayer::GetPlayerIP },
         { "GetLevelPlayedTime", &LuaPlayer::GetLevelPlayedTime },
@@ -3833,9 +3928,7 @@ namespace LuaPlayer
         { "GetQuestLevel", &LuaPlayer::GetQuestLevel },
         { "GetChatTag", &LuaPlayer::GetChatTag },
         { "GetRestBonus", &LuaPlayer::GetRestBonus },
-#ifndef CATA
         { "GetPhaseMaskForSpawn", &LuaPlayer::GetPhaseMaskForSpawn },
-#endif
         { "GetReqKillOrCastCurrentCount", &LuaPlayer::GetReqKillOrCastCurrentCount },
         { "GetQuestStatus", &LuaPlayer::GetQuestStatus },
         { "GetInGameTime", &LuaPlayer::GetInGameTime },
@@ -3875,17 +3968,13 @@ namespace LuaPlayer
         { "GetCorpse", &LuaPlayer::GetCorpse },
         { "GetGossipTextId", &LuaPlayer::GetGossipTextId },
         { "GetQuestRewardStatus", &LuaPlayer::GetQuestRewardStatus },
-#ifndef CATA
         { "GetShieldBlockValue", &LuaPlayer::GetShieldBlockValue },
         { "GetMailCount", &LuaPlayer::GetMailCount },
         { "GetXP", &LuaPlayer::GetXP },
         { "GetXPForNextLevel", &LuaPlayer::GetXPForNextLevel },
-#endif
 
         // Setters
-#ifndef CATA
         { "AdvanceSkillsToMax", &LuaPlayer::AdvanceSkillsToMax },
-#endif
         { "AdvanceSkill", &LuaPlayer::AdvanceSkill },
         { "AdvanceAllSkills", &LuaPlayer::AdvanceAllSkills },
         { "AddLifetimeKills", &LuaPlayer::AddLifetimeKills },
@@ -3893,10 +3982,8 @@ namespace LuaPlayer
         { "SetKnownTitle", &LuaPlayer::SetKnownTitle },
         { "UnsetKnownTitle", &LuaPlayer::UnsetKnownTitle },
         { "SetBindPoint", &LuaPlayer::SetBindPoint },
-#ifndef CATA
         { "SetArenaPoints", &LuaPlayer::SetArenaPoints },
         { "SetHonorPoints", &LuaPlayer::SetHonorPoints },
-#endif
         { "SetLifetimeKills", &LuaPlayer::SetLifetimeKills },
         { "SetGameMaster", &LuaPlayer::SetGameMaster },
         { "SetGMChat", &LuaPlayer::SetGMChat },
@@ -3909,9 +3996,7 @@ namespace LuaPlayer
         { "SetReputation", &LuaPlayer::SetReputation },
         { "SetFreeTalentPoints", &LuaPlayer::SetFreeTalentPoints },
         { "SetGuildRank", &LuaPlayer::SetGuildRank },
-#ifndef CATA
         { "SetMovement", &LuaPlayer::SetMovement },
-#endif
         { "SetSkill", &LuaPlayer::SetSkill },
         { "SetFactionForRace", &LuaPlayer::SetFactionForRace },
         { "SetDrunkValue", &LuaPlayer::SetDrunkValue },
@@ -3982,10 +4067,10 @@ namespace LuaPlayer
         { "CanFly", &LuaPlayer::CanFly },
         { "IsMoving", &LuaPlayer::IsMoving },
         { "IsFlying", &LuaPlayer::IsFlying },
-#ifndef CATA
         { "CanCompleteRepeatableQuest", &LuaPlayer::CanCompleteRepeatableQuest },
         { "CanRewardQuest", &LuaPlayer::CanRewardQuest },
-#endif
+        { "HasRecruited", &LuaPlayer::HasRecruited },
+        { "IsRecruited", &LuaPlayer::IsRecruited },
 
         // Gossip
         { "GossipMenuAddItem", &LuaPlayer::GossipMenuAddItem },
@@ -4046,10 +4131,8 @@ namespace LuaPlayer
         { "DurabilityPointLossForEquipSlot", &LuaPlayer::DurabilityPointLossForEquipSlot },
         { "DurabilityRepairAll", &LuaPlayer::DurabilityRepairAll },
         { "DurabilityRepair", &LuaPlayer::DurabilityRepair },
-#ifndef CATA
         { "ModifyHonorPoints", &LuaPlayer::ModifyHonorPoints },
         { "ModifyArenaPoints", &LuaPlayer::ModifyArenaPoints },
-#endif
         { "LeaveBattleground", &LuaPlayer::LeaveBattleground },
         { "BindToInstance", &LuaPlayer::BindToInstance },
         { "UnbindInstance", &LuaPlayer::UnbindInstance },
@@ -4082,42 +4165,23 @@ namespace LuaPlayer
         { "GroupCreate", &LuaPlayer::GroupCreate, METHOD_REG_WORLD }, // World state method only in multistate
         { "SendCinematicStart", &LuaPlayer::SendCinematicStart },
         { "SendMovieStart", &LuaPlayer::SendMovieStart },
+        { "RunCommand", &LuaPlayer::RunCommand },
 
         // Not implemented methods
-        { "GetHonorStoredKills", nullptr, METHOD_REG_NONE }, // classic only
-        { "GetRankPoints", nullptr, METHOD_REG_NONE }, // classic only
-        { "GetHonorLastWeekStandingPos", nullptr, METHOD_REG_NONE }, // classic only
+        { "GetHonorStoredKills", METHOD_REG_NONE }, // classic only
+        { "GetRankPoints", METHOD_REG_NONE }, // classic only
+        { "GetHonorLastWeekStandingPos", METHOD_REG_NONE }, // classic only
 
-        { "SetHonorStoredKills", nullptr, METHOD_REG_NONE }, // classic only
-        { "SetRankPoints", nullptr, METHOD_REG_NONE }, // classic only
-        { "SetHonorLastWeekStandingPos", nullptr, METHOD_REG_NONE }, // classic only
+        { "SetHonorStoredKills", METHOD_REG_NONE }, // classic only
+        { "SetRankPoints", METHOD_REG_NONE }, // classic only
+        { "SetHonorLastWeekStandingPos", METHOD_REG_NONE }, // classic only
 
-        { "CanFlyInZone", nullptr, METHOD_REG_NONE }, // not implemented
+        { "CanFlyInZone", METHOD_REG_NONE }, // not implemented
 
-        { "UpdateHonor", nullptr, METHOD_REG_NONE }, // classic only
-        { "ResetHonor", nullptr, METHOD_REG_NONE }, // classic only
-        { "ClearHonorInfo", nullptr, METHOD_REG_NONE }, // classic only
-        { "GainSpellComboPoints", nullptr, METHOD_REG_NONE }, // not implemented
-
-#ifdef CATA //Not implmented in TCPP
-        { "GetArenaPoints", nullptr, METHOD_REG_NONE },
-        { "GetHonorPoints", nullptr, METHOD_REG_NONE },
-        { "GetPhaseMaskForSpawn", nullptr, METHOD_REG_NONE },
-        { "GetShieldBlockValue", nullptr, METHOD_REG_NONE },
-        { "GetMailCount", nullptr, METHOD_REG_NONE },
-        { "GetXP", nullptr, METHOD_REG_NONE },
-        { "GetXPForNextLevel", nullptr, METHOD_REG_NONE },
-        { "AdvanceSkillsToMax", nullptr, METHOD_REG_NONE },
-        { "SetArenaPoints", nullptr, METHOD_REG_NONE },
-        { "SetHonorPoints", nullptr, METHOD_REG_NONE },
-        { "SetMovement", nullptr, METHOD_REG_NONE },
-        { "CanCompleteRepeatableQuest", nullptr, METHOD_REG_NONE },
-        { "CanRewardQuest", nullptr, METHOD_REG_NONE },
-        { "ModifyHonorPoints", nullptr, METHOD_REG_NONE },
-        { "ModifyArenaPoints", nullptr, METHOD_REG_NONE },
-#endif
-
-        { NULL, NULL, METHOD_REG_NONE }
+        { "UpdateHonor", METHOD_REG_NONE }, // classic only
+        { "ResetHonor", METHOD_REG_NONE }, // classic only
+        { "ClearHonorInfo", METHOD_REG_NONE }, // classic only
+        { "GainSpellComboPoints", METHOD_REG_NONE } // not implemented
     };
 };
 #endif

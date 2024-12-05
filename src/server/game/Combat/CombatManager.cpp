@@ -240,7 +240,7 @@ bool CombatManager::SetInCombatWith(Unit* who, bool addSecondUnitSuppressed)
     else if ((_owner->ToCreature() && _owner->ToCreature()->IsNPCBotOrPet() && who->IsControlledByPlayer()) ||
         (who->ToCreature() && who->ToCreature()->IsNPCBotOrPet() && _owner->IsControlledByPlayer()) ||
         (_owner->ToCreature() && _owner->ToCreature()->IsNPCBotOrPet() &&
-            who->ToCreature() && who->ToCreature()->IsNPCBotOrPet()))
+        who->ToCreature() && who->ToCreature()->IsNPCBotOrPet()))
         ref = new PvPCombatReference(_owner, who);
     //end npcbot
     else

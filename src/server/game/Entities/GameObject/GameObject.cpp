@@ -111,7 +111,7 @@ QuaternionData QuaternionData::fromEulerAnglesZYX(float Z, float Y, float X)
 }
 
 GameObject::GameObject() : WorldObject(false), MapObject(),
-    m_model(nullptr), m_goValue(), m_AI(nullptr), m_respawnCompatibilityMode(false)
+    m_model(nullptr), m_goValue(), m_stringIds(), m_AI(nullptr), m_respawnCompatibilityMode(false)
 {
     m_objectType |= TYPEMASK_GAMEOBJECT;
     m_objectTypeId = TYPEID_GAMEOBJECT;
@@ -433,6 +433,9 @@ bool GameObject::Create(ObjectGuid::LowType guidlow, uint32 name_id, Map* map, u
     }
 
     LastUsedScriptID = GetGOInfo()->ScriptId;
+
+    m_stringIds[AsUnderlyingType(StringIdType::Template)] = &goinfo->StringId;
+
     AIM_Initialize();
 
     // Initialize loot duplicate count depending on raid difficulty
@@ -730,6 +733,17 @@ void GameObject::Update(uint32 diff)
                         Trinity::PlayerSearcher<Trinity::AnyPlayerInObjectRangeCheck> searcher(this, player, checker);
                         Cell::VisitWorldObjects(this, searcher, radius);
                         target = player;
+
+                        //npcbot
+                        if (!target)
+                        {
+                            Creature* bot = nullptr;
+                            std::function bot_checker = [=, this](Creature const* c) { return c->IsNPCBot() && c->IsAlive() && IsWithinDistInMap(c, radius); };
+                            Trinity::CreatureSearcher searcher(this, bot, bot_checker);
+                            Cell::VisitAllObjects(this, searcher, radius);
+                            target = bot;
+                        }
+                        //end npcbot
                     }
 
                     if (target)
@@ -816,6 +830,12 @@ void GameObject::Update(uint32 diff)
                             if (Player* player = target->ToPlayer())
                                 if (Battleground* bg = player->GetBattleground())
                                     bg->HandleTriggerBuff(GetGUID());
+
+                        //npcbot
+                        if (target->IsNPCBot() && !goInfo->trap.diameter && goInfo->trap.cooldown == 3)
+                            if (Battleground* bg = target->ToCreature()->GetBotBG())
+                                bg->HandleTriggerBuff(GetGUID());
+                        //end npcbot
                     }
                     break;
                 }
@@ -1166,6 +1186,8 @@ bool GameObject::LoadFromDB(ObjectGuid::LowType spawnId, Map* map, bool addToMap
     }
 
     m_goData = data;
+
+    m_stringIds[AsUnderlyingType(StringIdType::Spawn)] = &data->StringId;
 
     if (addToMap && !GetMap()->AddToMap(this))
         return false;
@@ -2209,15 +2231,15 @@ void GameObject::Use(Unit* user)
                     {
                         switch (bgoinfo->entry)
                         {
-                        case 179785:                        // Silverwing Flag
-                        case 179786:                        // Warsong Flag
-                            if (botbg->GetTypeID(true) == BATTLEGROUND_WS)
-                                botbg->EventBotClickedOnFlag(bot, this);
-                            break;
-                        case 184142:                        // Netherstorm Flag
-                            if (botbg->GetTypeID(true) == BATTLEGROUND_EY)
-                                botbg->EventBotClickedOnFlag(bot, this);
-                            break;
+                            case 179785:                        // Silverwing Flag
+                            case 179786:                        // Warsong Flag
+                                if (botbg->GetTypeID(true) == BATTLEGROUND_WS)
+                                    botbg->EventBotClickedOnFlag(bot, this);
+                                break;
+                            case 184142:                        // Netherstorm Flag
+                                if (botbg->GetTypeID(true) == BATTLEGROUND_EY)
+                                    botbg->EventBotClickedOnFlag(bot, this);
+                                break;
                         }
                     }
                     //this cause to call return, all flags must be deleted here!!
@@ -2378,6 +2400,34 @@ uint32 GameObject::GetScriptId() const
             return scriptId;
 
     return GetGOInfo()->ScriptId;
+}
+
+void GameObject::InheritStringIds(GameObject const* parent)
+{
+    // copy references to stringIds from template and spawn
+    m_stringIds = parent->m_stringIds;
+
+    // then copy script stringId, not just its reference
+    SetScriptStringId(std::string(parent->GetStringId(StringIdType::Script)));
+}
+
+bool GameObject::HasStringId(std::string_view id) const
+{
+    return std::ranges::any_of(m_stringIds, [id](std::string const* stringId) { return stringId && *stringId == id; });
+}
+
+void GameObject::SetScriptStringId(std::string id)
+{
+    if (!id.empty())
+    {
+        m_scriptStringId.emplace(std::move(id));
+        m_stringIds[AsUnderlyingType(StringIdType::Script)] = &*m_scriptStringId;
+    }
+    else
+    {
+        m_scriptStringId.reset();
+        m_stringIds[AsUnderlyingType(StringIdType::Script)] = nullptr;
+    }
 }
 
 // overwrite WorldObject function for proper name localization

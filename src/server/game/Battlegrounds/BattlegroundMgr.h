@@ -180,7 +180,7 @@ class TC_GAME_API BattlegroundMgr
         BattlegroundTemplateMap _battlegroundTemplates;
         BattlegroundMapTemplateContainer _battlegroundMapTemplates;
 
-        //npcbot
+    //npcbot
 public:
     BattlegroundDataContainer const& GetBgDataStore() const { return bgDataStore; }
     //end npcbot
