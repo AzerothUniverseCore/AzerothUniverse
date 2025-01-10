@@ -67,6 +67,11 @@
 #ifdef ELUNA
 #include "LuaEngine.h"
 #endif
+
+//npcbot
+#include "botmgr.h"
+//end npcbot
+
 extern SpellEffectHandlerFn SpellEffectHandlers[TOTAL_SPELL_EFFECTS];
 
 SpellDestination::SpellDestination()
