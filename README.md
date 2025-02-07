@@ -21,6 +21,14 @@
 - Eluna
 - NPCBots
 
+## Expansion
+
+- Vanilla
+- The Burning Crusade
+- Wrath of the Lich King
+- Cataclysm
+- Mists of Pandaria
+
 ## Discord
 
 + [AzerothUniverse](https://discord.gg/9kfczSTdWk)
