@@ -2,6 +2,7 @@
 
 * [Requirements](#requirements)
 * [AzerothUniverse](#azerothuniverse)
+* [Expansion](#expansion)
 * [Discord](#discord)
 
 ## Requirements
